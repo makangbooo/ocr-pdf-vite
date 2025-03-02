@@ -4,7 +4,7 @@ import {Worker, Viewer} from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import html2canvas from "html2canvas";
 import axios from "axios";
-import {Flex, Typography, Popover} from "antd";
+import {Flex, Typography, Popover, Button, Row, Col} from "antd";
 
 // Import the styles provided by the react-pdf-viewer packages
 import '@react-pdf-viewer/core/lib/styles/index.css';
@@ -12,6 +12,7 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 import UploadButton from "../uploadButton.tsx";
+import {BorderOuterOutlined, ExpandOutlined} from "@ant-design/icons";
 
 
 const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string, refreshOcrMode: (mode: boolean)=>void }> = ({ file, refreshOcrText,refreshOcrMode }) => {
@@ -80,7 +81,8 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 			const blob = await (await fetch(imgData)).blob();
 			const formData = new FormData();
 			formData.append("file", blob, "screenshot.png");
-			const response = await axios.post("http://localhost:8080/OCRToPDF/ocrImage", formData, { //todo
+			// const response = await axios.post("http://localhost:8080/OCRToPDF/ocrImage", formData, {
+			const response = await axios.post(`${process.env.VITE_API_BASE_URL}/OCRToPDF/ocrImage`, formData, { //todo
 				headers: { "Content-Type": "multipart/form-data" },
 			});
 			setOcrResult(response.data || "未识别到文字");
@@ -102,8 +104,13 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 						height: "100%",
 						overflow: "hidden" }}
 				>
+					{/*<Flex gap={'large'}>*/}
+					{/*	<Button type="primary" icon={<BorderOuterOutlined />}>启用 OCR 模式</Button>*/}
+					{/*	<Button type="primary"  icon={<ExpandOutlined />}>启用 模版 模式</Button>*/}
+					{/*</Flex>*/}
 					{/* 添加按钮 */}
-					<UploadButton onClick={toggleOcrMode} name={isOcrEnabled ? "关闭 OCR 模式" : "启用 OCR 模式"} buttonType="ocr"/>
+					<UploadButton onClick={toggleOcrMode} name={isOcrEnabled ? "关闭 OCR 模式" : "启用 OCR 模式"} buttonType="ocr" disabled={false}/>
+					{/*<UploadButton onClick={toggleOcrMode} name={"启用 模版 模式"} buttonType="ocr" disabled={isOcrEnabled}/>*/}
 
 					<div
 						ref={containerRef}
@@ -142,6 +149,18 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 								></div>
 							</Popover>
 						)}
+						{/*模版模式*/}
+						<div
+							style={{
+								position: "absolute",
+								left: '200px',
+								top: '200px',
+								width: '300px',
+								height: '300px',
+								border: "2px dashed red",
+								backgroundColor: "rgba(255, 0, 0, 0.1)",
+							}}
+						>你好啊</div>
 						{/*{isOcrEnabled && (*/}
 						{/*	<div*/}
 						{/*		style={{*/}

@@ -30,11 +30,12 @@ interface UploadButtonProps {
 	name: string;
 	buttonType: string;
 	onClick: () => void;
+	disabled: boolean;
 }
 
 
 // 渐变色按钮
-const UploadButton: React.FC<UploadButtonProps> = ({ onClick, name, buttonType }) => {
+const UploadButton: React.FC<UploadButtonProps> = ({ onClick, name, buttonType, disabled }) => {
 	const { styles } = useStyle();
 	// 根据传入的buttonType判断按钮的icon
 	let icon;
@@ -64,6 +65,7 @@ const UploadButton: React.FC<UploadButtonProps> = ({ onClick, name, buttonType }
 		className={styles.linearGradientButton}
 		//onClick为父组件传递的方法
 		onClick={onClick}
+		disabled={disabled}
 	>
 		{name}
 	</Button>

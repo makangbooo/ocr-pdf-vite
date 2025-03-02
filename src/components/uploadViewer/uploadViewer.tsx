@@ -60,7 +60,8 @@ const UploadViewer: React.FC<{ refreshPdfUrl: (url:string, imageUrlList: ImageIt
 		});
 		try {
 
-			const response = await axios.post("http://localhost:8080/OCRToPDF/imageToPDF", requestData);
+			// const response = await axios.post("http://localhost:8080/OCRToPDF/imageToPDF", requestData);
+			const response = await axios.post(`${process.env.VITE_API_BASE_URL}/OCRToPDF/imageToPDF`, requestData);
 			const pdfUrl = response.data.path;
 
 			//遍历fileList数组，获取每个对象中的response属性，赋值给imageUrlList数组
@@ -94,7 +95,8 @@ const UploadViewer: React.FC<{ refreshPdfUrl: (url:string, imageUrlList: ImageIt
 		</Space>
 		<Divider />
 		<Upload
-			action="http://localhost:8080/OCRToPDF/uploadImage"
+			// action="http://localhost:8080/OCRToPDF/uploadImage"
+			action = {`${process.env.VITE_API_BASE_URL}/OCRToPDF/uploadImage`}
 			listType="picture-card"
 			fileList={fileList}
 			onPreview={handlePreview}

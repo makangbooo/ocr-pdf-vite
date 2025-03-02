@@ -14,7 +14,7 @@ interface ImageListProps {
 const ImageListViewer: React.FC<ImageListProps> = ({ imageUrlList, showDrawer}) => {
 	return (
 		<div style={{ height: '100%',width:"100%" }}>
-			<UploadButton onClick={showDrawer} name={"导入图像"} buttonType={"upload"}/>
+			<UploadButton onClick={showDrawer} name={"导入图像"} buttonType={"upload"} disabled={false}/>
 			{imageUrlList.length === 0 ?
 				<Flex justify="center" align="center" style={{ height: '95%' }}>
 				  <Typography.Title type="secondary" level={5} style={{ whiteSpace: 'nowrap' }}>
