@@ -4,7 +4,7 @@ import {Worker, Viewer} from '@react-pdf-viewer/core';
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import html2canvas from "html2canvas";
 import axios from "axios";
-import {Flex, Typography, Popover, Button} from "antd";
+import {Flex, Typography, Popover, Button, Row, Col} from "antd";
 
 // Import the styles provided by the react-pdf-viewer packages
 import '@react-pdf-viewer/core/lib/styles/index.css';
@@ -49,6 +49,7 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 			setOcrResult("");
 			setIsOCRDrawing(false);
 		}
+		setIsTemplateEnabled(false)
 		setIsOcrEnabled(prev => !prev);
 		refreshOcrMode(!isOcrEnabled)
 	};
@@ -134,22 +135,30 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 						overflow: "hidden" }}
 				>
 
-					<Flex gap={'large'}>
+					{/*<Flex gap={'large'}>*/}
+						<Row justify="center">
+							<Col span={6}>
 						<Button
 							type="primary"
 							icon={<BorderOuterOutlined />}
 							onClick={toggleOcrMode}
+							danger={isOcrEnabled}
 						>
-							启用 OCR 模式
+							{isOcrEnabled ? "关闭 OCR 模式" : "启用 OCR 模式"}
 						</Button>
+							</Col>
+							<Col span={6}>
 						<Button
 							type="primary"
 							icon={<ExpandOutlined />}
 							onClick={toggleTemplateMode}
+							danger={isTemplateEnabled}
 						>
-							启用 模版 模式
+							{isTemplateEnabled ? "关闭 模版 模式" : "启用 模版 模式"}
 						</Button>
-					</Flex>
+							</Col>
+						</Row>
+					{/*</Flex>*/}
 					{/* 添加按钮 */}
 					{/*<UploadButton onClick={toggleOcrMode} name={isOcrEnabled ? "关闭 OCR 模式" : "启用 OCR 模式"} buttonType="ocr" disabled={false}/>*/}
 					{/*<UploadButton onClick={toggleOcrMode} name={"启用 模版 模式"} buttonType="ocr" disabled={isOcrEnabled}/>*/}
@@ -233,23 +242,23 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 				<Flex justify="center" align="center" style={{ height: '100%', width: "100%" }}>
 					<Typography.Title type="secondary" level={5}>pdf文件</Typography.Title>
 				</Flex>
-					{
-						template && template.map((item) => {
-							return (
-								<div
-									style={{
-										position: "absolute",
-										left: item.x,
-										top: item.y,
-										width: item.width,
-										height: item.height,
-										border: "2px dashed red",
-										backgroundColor: "rgba(255, 0, 0, 0.1)",
-									}}
-								/>
-							)
-						})
-					}
+					{/*{*/}
+					{/*	template && template.map((item) => {*/}
+					{/*		return (*/}
+					{/*			<div*/}
+					{/*				style={{*/}
+					{/*					position: "absolute",*/}
+					{/*					left: item.x,*/}
+					{/*					top: item.y,*/}
+					{/*					width: item.width,*/}
+					{/*					height: item.height,*/}
+					{/*					border: "2px dashed red",*/}
+					{/*					backgroundColor: "rgba(255, 0, 0, 0.1)",*/}
+					{/*				}}*/}
+					{/*			/>*/}
+					{/*		)*/}
+					{/*	})*/}
+					{/*}*/}
 				</>
 			)}
 		</>
