@@ -55,7 +55,7 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 	};
 
 	// 切换 模版 功能的启用状态
-	const toggleTemplateMode = () => {
+	const toggleTemplateMode = async () => {
 		if (isOcrEnabled) {
 			// 关闭 OCR 模式时重置矩形和结果
 			setRect(null);
@@ -65,6 +65,48 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 			refreshOcrMode(false)
 		}
 		setIsTemplateEnabled(prev => !prev);
+
+		if (!containerRef.current || !template) return;
+		// 遍历 template 将template中的矩形以图片的形式发送给后端
+		let canvasImageList;
+		try {
+			// 获取容器元素的尺寸信息
+			const container = containerRef.current;
+			if (!container) throw new Error('容器元素不存在');
+
+			const containerWidth = container.offsetWidth;
+			const containerHeight = container.offsetHeight
+
+			canvasImageList = await Promise.all(
+				template.map(async (item) => {
+					// 将百分比字符串转换为数值并计算像素值
+					const xPixels = Math.round(containerWidth * parseFloat(item.x) / 100);
+					const yPixels = Math.round(containerHeight * parseFloat(item.y) / 100);
+					const xWidth = Math.round(containerWidth * parseFloat(item.width) / 100);
+					const xHeight = Math.round(containerHeight * parseFloat(item.height) / 100);
+
+					const canvas = await
+						html2canvas(container, {
+						x: xPixels + 2,
+						y: yPixels + 2,
+						width: xWidth,
+						height: xHeight,
+						scale: 20,
+					});
+					return canvas
+				})
+			);
+			console.log("canvasImageList",canvasImageList) //todo 这里打印出问题
+			console.log("canvasImageList[0]",canvasImageList[0]) //todo 这里打印出问题
+
+			const response = await axios.post(`${process.env.VITE_API_BASE_URL}/OCRToPDF/ocrTemplate`, canvasImageList);
+			console.log(response)
+		} catch (error) {
+			console.error("OCR 处理失败:", error);
+			setOcrResult("OCR 处理失败");
+			refreshOcrText("OCR 处理失败");
+		}
+
 	};
 
 	// 开始绘制（仅在 OCR 启用时生效）
@@ -107,6 +149,7 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 				height: rect.height,
 				scale: 20,
 			});
+
 			const imgData = canvas.toDataURL("image/png");
 			const blob = await (await fetch(imgData)).blob();
 			const formData = new FormData();
@@ -143,6 +186,7 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 							icon={<BorderOuterOutlined />}
 							onClick={toggleOcrMode}
 							danger={isOcrEnabled}
+							disabled={isTemplateEnabled}
 						>
 							{isOcrEnabled ? "关闭 OCR 模式" : "启用 OCR 模式"}
 						</Button>
@@ -153,6 +197,7 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 							icon={<ExpandOutlined />}
 							onClick={toggleTemplateMode}
 							danger={isTemplateEnabled}
+							disabled={isOcrEnabled}
 						>
 							{isTemplateEnabled ? "关闭 模版 模式" : "启用 模版 模式"}
 						</Button>
