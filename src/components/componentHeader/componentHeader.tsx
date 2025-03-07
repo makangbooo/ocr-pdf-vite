@@ -19,7 +19,12 @@ interface FileItem {
 	path: string;
 	children?: FileItem[];
 	file?: File;
-
+}
+interface CurrentFile {
+	name?: string;
+	type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
+	data: string;
+	file?: File;
 }
 
 interface ComponentHeaderInterface {
@@ -28,7 +33,7 @@ interface ComponentHeaderInterface {
 	setSelectedPaths: ( paths: Set<string>) => void;
 	resetIsBatchOperation:( isBatchOperation: boolean) => void;
 
-	imageUrl: string;
+	currentFile: CurrentFile;
 
 	// 画框识别
 	isOcrEnabled: boolean;
@@ -48,11 +53,11 @@ interface ComponentHeaderInterface {
 }
 // 使用 FileReader 将本地文件转换为 Base64
 // 使用 FileReader 将 blob URL 转换为 Base64
-const getBase64FromBlob = (imageUrl: string): Promise<string> => {
+const getBase64FromBlob = (currentFile: CurrentFile): Promise<string> => {
 	return new Promise(async (resolve, reject) => {
 		try {
 			// 通过 fetch 获取 Blob
-			const response = await fetch(imageUrl);
+			const response = await fetch(currentFile.data);
 			if (!response.ok) {
 				throw new Error('Failed to fetch blob from URL');
 			}
@@ -86,7 +91,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 isOcrEnabled,
 		 setIsTemplateEnabled,
 		 isTemplateEnabled,
-		 imageUrl,
+		 currentFile,
 		 setFullText,
 		 setIsFullOcrEnabled,
 		 isFullOcrEnabled,
@@ -139,8 +144,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 	// 全文识别按钮
 	const onFullTextOcr = async () => {
-		if(!imageUrl || imageUrl==="") return;
-
+		if(!currentFile || (currentFile.data==="")) return;
 
 		// todo, 加入按钮loading
 		setIsFullOcrEnabled(!isFullOcrEnabled);
@@ -148,7 +152,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		try {
 
 			// 将图片转换为 Base64
-			const base64Data = await getBase64FromBlob(imageUrl);
+			const base64Data = await getBase64FromBlob(currentFile);
 			// 目标 API URL
 			const url = API_URLS.IMAGE_BASE64_OCR;
 

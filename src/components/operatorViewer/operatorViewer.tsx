@@ -13,7 +13,13 @@ interface OperatorViewerProps {
 }
 
 
-const OperatorViewer: React.FC<OperatorViewerProps> = ({ isOcrEnabled, isFullOcrEnabled, fullText,ocrText,  }) => {
+const OperatorViewer: React.FC<OperatorViewerProps> = (
+	{
+		// isOcrEnabled,
+		// isFullOcrEnabled,
+		fullText,
+		// ocrText,
+	}) => {
 
 	// 遍历ocrText，将每一行数据存入data数组
 	const data = fullText.split('\n');

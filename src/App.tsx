@@ -4,6 +4,7 @@ import ComponentHeader from './components/componentHeader/componentHeader.tsx';
 import UploadButton from './components/uploadButton.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
+import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
 
 interface FileItem {
     name: string;
@@ -13,10 +14,17 @@ interface FileItem {
     file?: File;
 }
 
+interface CurrentFile {
+    name?: string;
+    type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
+    data: string;
+    file?: File;
+}
+
 const App: React.FC = () => {
 
     // 文件列表
-    const [imageUrl, setImageUrl] = useState('');// 所选择的图片
+    const [currentFile, setCurrentFile] = useState<CurrentFile>({data: ""});// 所选择的图片
     const [isBatchOperation, setIsBatchOperation] = useState(false);// 是否批量操作
     const [fileTree, setFileTree] = useState<FileItem[]>([]);// 文件夹
     const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());// 选择的文件
@@ -53,7 +61,7 @@ const App: React.FC = () => {
                     isOcrEnabled={isOcrEnabled}
                     setIsTemplateEnabled={setIsTemplateEnabled}
                     isTemplateEnabled={isTemplateEnabled}
-                    imageUrl={imageUrl}
+                    currentFile={currentFile}
                     setFullText={setFullText}
                     setIsFullOcrEnabled={setIsFullOcrEnabled}
                     isFullOcrEnabled={isFullOcrEnabled}
@@ -87,7 +95,7 @@ const App: React.FC = () => {
                     }}
                 >
                     <FileSystemViewer
-                        refreshImageUrl={setImageUrl}
+                        setCurrentFile={setCurrentFile}
                         isBatchOperation={isBatchOperation}
                         selectedPaths={selectedPaths}
                         fileTree={fileTree}
@@ -130,13 +138,21 @@ const App: React.FC = () => {
                         }}
                     />
                     {/*todo 这里判断所选图片为pdf还是image*/}
-                    <ImageViewer
-                        imageUrl={imageUrl}
-                        isOcrEnabled={isOcrEnabled}
-                        setOcrText={setOcrText}
-                        ocrText={ocrText}
-                        isTemplateEnabled={isTemplateEnabled}
-                    />
+                    {
+                        currentFile.type === 'pdf' ?
+                            <PdfViewer
+                                currentFile={currentFile}
+                            />
+                            :
+                            <ImageViewer
+                                currentFile={currentFile}
+                                isOcrEnabled={isOcrEnabled}
+                                setOcrText={setOcrText}
+                                ocrText={ocrText}
+                                isTemplateEnabled={isTemplateEnabled}
+                            />
+                    }
+
                 </div>
 
                 {/* 页面3 */}

@@ -3,6 +3,7 @@ import React from 'react';
 import { Menu, Checkbox } from 'antd';
 import { FolderOutlined, FileImageOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
+import {getFileType} from "../../utils/fileTypeIdentify.tsx";
 
 interface FileItem {
 	name: string;
@@ -12,8 +13,15 @@ interface FileItem {
 	file?: File;
 }
 
+interface CurrentFile {
+	name?: string;
+	type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
+	data: string;
+	file?: File;
+}
+
 interface FileSystemViewer {
-	refreshImageUrl: (url:string)=>void
+	setCurrentFile: (url:CurrentFile)=>void
 	isBatchOperation:boolean;
 	selectedPaths:Set<string>;
 	fileTree:FileItem[];
@@ -22,7 +30,7 @@ interface FileSystemViewer {
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-const FileSystemViewer: React.FC<FileSystemViewer> = ({refreshImageUrl,isBatchOperation,selectedPaths,fileTree,setSelectedPaths}) => {
+const FileSystemViewer: React.FC<FileSystemViewer> = ({setCurrentFile,isBatchOperation,selectedPaths,fileTree,setSelectedPaths}) => {
 
 	// 将文件树转换为 Menu 所需的 items 格式
 	const getMenuItems = (items: FileItem[]): MenuItem[] => {
@@ -49,8 +57,16 @@ const FileSystemViewer: React.FC<FileSystemViewer> = ({refreshImageUrl,isBatchOp
 	// 处理菜单点击事件
 	const handleMenuClick: MenuProps['onClick'] = (e) => {
 		const clickedItem = findItemByPath(fileTree, e.key);
+		console.log("clickedItem",clickedItem)
 		if (clickedItem?.type === 'file' && clickedItem.file) {
-			refreshImageUrl(URL.createObjectURL(clickedItem.file))
+			const fileType = getFileType(clickedItem.name);
+			const currentClick = {
+				name: clickedItem.name,
+				type: fileType,
+				data: URL.createObjectURL(clickedItem.file),
+			}
+			console.log("currentClick",currentClick)
+			setCurrentFile(currentClick)
 		}
 	};
 

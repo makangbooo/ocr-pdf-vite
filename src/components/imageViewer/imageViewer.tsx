@@ -10,13 +10,22 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import {API_URLS} from "../../api/api.ts";
 
 
+interface CurrentFile {
+	name?: string;
+	type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
+	data: string;
+	file?: File;
+}
+
 interface ImageViewerProps {
-	imageUrl: string;
+	currentFile: CurrentFile;
 	isOcrEnabled: boolean;
 	isTemplateEnabled: boolean;
 	setOcrText: (text: string) => void;
 	ocrText: string;
 }
+
+
 
 // 使用 FileReader 将 blob URL 转换为 Base64
 const getBase64FromBlob = (imageUrl: string): Promise<string> => {
@@ -48,7 +57,7 @@ const getBase64FromBlob = (imageUrl: string): Promise<string> => {
 	});
 };
 
-const ImageViewer: React.FC<ImageViewerProps> = ({ imageUrl, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled }) => {
+const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	// OCR绘制矩形
@@ -154,7 +163,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ imageUrl, ocrText, setOcrText
 
 	return (
 		<>
-		{imageUrl ? (
+		{currentFile ? (
 				<div
 					style={{
 						position: "relative",
@@ -176,7 +185,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ imageUrl, ocrText, setOcrText
 						onMouseMove={handleMouseMove}
 						onMouseUp={handleMouseUp}
 					>
-						<Image src={imageUrl} style={{height:  "88vh" }} preview={false}/>
+						<Image src={currentFile.data} style={{height:  "88vh" }} preview={false}/>
 
 						{rect && isOcrEnabled && (
 							<Popover content={ocrText || "等待识别..."} title="ocr识别结果">
