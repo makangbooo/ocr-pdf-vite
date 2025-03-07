@@ -1,14 +1,22 @@
 import React from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 
-import {Flex, Input, List, Tabs, Typography} from "antd";
-const Item = List.Item;
+import {Col, Flex, Form, Input, List, Row, Tabs, Typography} from "antd";
+const LItem = List.Item;
+const FItem = Form.Item;
 
-const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ ocrText, isOcrEnabled }) => {
+interface OperatorViewerProps {
+	isOcrEnabled: boolean;
+	ocrText: string;
+	isFullOcrEnabled: boolean;
+	fullText: string;
+}
 
-	console.log("ocrText",ocrText)
+
+const OperatorViewer: React.FC<OperatorViewerProps> = ({ isOcrEnabled, isFullOcrEnabled, fullText,ocrText,  }) => {
+
 	// 遍历ocrText，将每一行数据存入data数组
-	const data = ocrText.split('\n');
+	const data = fullText.split('\n');
 
 
 	return (
@@ -21,15 +29,17 @@ const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ o
 						{
 							label: 'ocr识别结果',
 							key: '1',
-							children: isOcrEnabled ?
+							children:
+								// isOcrEnabled ?
 								<Flex justify="center" align="center" style={{ height: '100%' }}>
-									<Typography.Text copyable>{ocrText}</Typography.Text>
-								</Flex>:
-								<Flex justify="center" align="center" style={{ height: '100%' }}>
-									<Typography.Title type="secondary" level={5} style={{ whiteSpace: 'nowrap' }}>
-										操作界面
-									</Typography.Title>
+									<Typography.Text copyable>{fullText}</Typography.Text>
 								</Flex>
+						// :
+								// <Flex justify="center" align="center" style={{ height: '100%' }}>
+								// 	<Typography.Title type="secondary" level={5} style={{ whiteSpace: 'nowrap' }}>
+								// 		操作界面
+								// 	</Typography.Title>
+								// </Flex>
 						},
 						{
 							label: '数据项编辑',
@@ -40,7 +50,7 @@ const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ o
 									bordered
 									dataSource={data}
 									renderItem={(item,index) => (
-										<Item>
+										<LItem>
 											<Typography.Text
 												mark
 												style={{flexShrink: 0,marginRight: '8px'}}
@@ -49,7 +59,7 @@ const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ o
 												第{index+1}行:
 											</Typography.Text>
 											<Input placeholder="Basic usage" defaultValue={item}/>
-										</Item>
+										</LItem>
 									)}
 								/>
 							,
@@ -57,8 +67,23 @@ const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ o
 						{
 							label: '上传档案系统',
 							key: '3',
-							children: 'Tab 3',
-							disabled: true,//todo 用户上传文档后开放
+							children:
+								<Form>
+									<Row gutter={5}>
+										<Col span={8}>
+											<FItem label='字段1' name='clumn1' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='字段2' name='clumn2' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+									</Row>
+								</Form>
+							,
+
 						},
 					]}
 				/>

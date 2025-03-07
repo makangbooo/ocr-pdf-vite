@@ -1,6 +1,6 @@
 // components/FileSystemViewer.tsx
-import React, { useState } from 'react';
-import { Button, Menu, Checkbox } from 'antd';
+import React from 'react';
+import { Menu, Checkbox } from 'antd';
 import { FolderOutlined, FileImageOutlined } from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 
@@ -17,12 +17,12 @@ interface FileSystemViewer {
 	isBatchOperation:boolean;
 	selectedPaths:Set<string>;
 	fileTree:FileItem[];
-	handleCheckboxChange: (path: string, isFolder: boolean, checked: boolean) => void;
+	setSelectedPaths: ( paths: Set<string>) => void;
 }
 
 type MenuItem = Required<MenuProps>['items'][number];
 
-const FileSystemViewer: React.FC<FileSystemViewer> = ({refreshImageUrl,isBatchOperation,selectedPaths,fileTree,handleCheckboxChange}) => {
+const FileSystemViewer: React.FC<FileSystemViewer> = ({refreshImageUrl,isBatchOperation,selectedPaths,fileTree,setSelectedPaths}) => {
 
 	// 将文件树转换为 Menu 所需的 items 格式
 	const getMenuItems = (items: FileItem[]): MenuItem[] => {
@@ -31,7 +31,6 @@ const FileSystemViewer: React.FC<FileSystemViewer> = ({refreshImageUrl,isBatchOp
 			icon: item.type === 'folder' ? <FolderOutlined /> : <FileImageOutlined />,
 			label: (
 				<div style={{ display: 'flex', alignItems: 'center' }}>
-					{/* todo，当用户点击批量操作时，显示选择框*/}
 					{
 					isBatchOperation &&
                       <Checkbox
@@ -67,9 +66,44 @@ const FileSystemViewer: React.FC<FileSystemViewer> = ({refreshImageUrl,isBatchOp
 		return undefined;
 	};
 
+	// 获取所有子文件路径
+	const getAllChildPaths = (item: FileItem): string[] => {
+		const paths: string[] = [];
+		if (item.type === 'file') {
+			paths.push(item.path);
+		} else if (item.children) {
+			item.children.forEach(child => {
+				paths.push(...getAllChildPaths(child));
+			});
+		}
+		return paths;
+	};
+
+	// 处理选择框变化
+	const handleCheckboxChange = (path: string, isFolder: boolean, checked: boolean) => {
+		const newSelected = new Set(selectedPaths);
+		const item = findItemByPath(fileTree, path);
+
+		if (isFolder && item?.children) {
+			const childPaths = getAllChildPaths(item);
+			if (checked) {
+				childPaths.forEach(p => newSelected.add(p));
+			} else {
+				childPaths.forEach(p => newSelected.delete(p));
+			}
+		} else {
+			if (checked) {
+				newSelected.add(path);
+			} else {
+				newSelected.delete(path);
+			}
+		}
+
+		setSelectedPaths(newSelected);
+	};
+
 	return (
-		<div style={{ display: 'flex', height: '100vh',width: '100%' }}>
-			<div style={{ width: 300, background: '#f0f2f5' }}>
+
 				<Menu
 					mode="inline"
 					items={getMenuItems(fileTree)}
@@ -77,8 +111,7 @@ const FileSystemViewer: React.FC<FileSystemViewer> = ({refreshImageUrl,isBatchOp
 					style={{ height: 'calc(100% - 60px)', overflow: 'auto' }}
 					defaultOpenKeys={fileTree.map(item => item.path)}
 				/>
-			</div>
-		</div>
+
 	);
 };
 
