@@ -26,8 +26,11 @@ const App: React.FC = () => {
     // 文件列表
     const [currentFile, setCurrentFile] = useState<CurrentFile>({data: ""});// 所选择的图片
     const [isBatchOperation, setIsBatchOperation] = useState(false);// 是否批量操作
-    const [fileTree, setFileTree] = useState<FileItem[]>([]);// 文件夹
-    const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());// 选择的文件
+
+    const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());// 批量操作所选择的文件
+    const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null); // 文件夹句柄（eg: /Users/username/Documents）
+    const [internalFileTree, setInternalFileTree] = useState<FileItem[]>(); // 文件树
+
 
     // ocr模式
     const [ocrText, setOcrText] = useState("");
@@ -41,6 +44,19 @@ const App: React.FC = () => {
     // 模版模式
     const [isTemplateEnabled, setIsTemplateEnabled] = useState(false);
 
+    const buttonsStatusEdit = {
+        // 按钮状态
+        isOcrEnabled: isOcrEnabled,
+        isFullOcrEnabled: isFullOcrEnabled,
+        isTemplateEnabled: isTemplateEnabled,
+        isBatchOperation: isBatchOperation,
+        // 按钮操作
+        setIsOcrEnabled: setIsOcrEnabled,
+        setIsFullOcrEnabled: setIsFullOcrEnabled,
+        setIsTemplateEnabled: setIsTemplateEnabled,
+        setIsBatchOperation: setIsBatchOperation,
+    }
+
     return (
         <div
             style={{
@@ -53,18 +69,14 @@ const App: React.FC = () => {
         >
             <div style={{height: '12vh', width: '100vw',}}>
                 <ComponentHeader
-                    setFileTree={setFileTree}
                     setSelectedPaths={setSelectedPaths}
+                    setDirHandle={setDirHandle}
+                    dirHandle={dirHandle}
+                    setInternalFileTree={setInternalFileTree}
                     resetIsBatchOperation={setIsBatchOperation}
-                    isBatchOperation={isBatchOperation}
-                    setIsOcrEnabled={setIsOcrEnabled}
-                    isOcrEnabled={isOcrEnabled}
-                    setIsTemplateEnabled={setIsTemplateEnabled}
-                    isTemplateEnabled={isTemplateEnabled}
                     currentFile={currentFile}
                     setFullText={setFullText}
-                    setIsFullOcrEnabled={setIsFullOcrEnabled}
-                    isFullOcrEnabled={isFullOcrEnabled}
+                    {...buttonsStatusEdit}
                 />
             </div>
             <div
@@ -96,10 +108,13 @@ const App: React.FC = () => {
                 >
                     <FileSystemViewer
                         setCurrentFile={setCurrentFile}
-                        isBatchOperation={isBatchOperation}
+                        {...buttonsStatusEdit}
                         selectedPaths={selectedPaths}
-                        fileTree={fileTree}
                         setSelectedPaths={setSelectedPaths}
+                        setDirHandle={setDirHandle}
+                        dirHandle={dirHandle}
+                        setInternalFileTree={setInternalFileTree}
+                        internalFileTree={internalFileTree || []}
                     />
                     <UploadButton
                         name={'转化为双层pdf'}
@@ -146,10 +161,9 @@ const App: React.FC = () => {
                             :
                             <ImageViewer
                                 currentFile={currentFile}
-                                isOcrEnabled={isOcrEnabled}
                                 setOcrText={setOcrText}
                                 ocrText={ocrText}
-                                isTemplateEnabled={isTemplateEnabled}
+                                {...buttonsStatusEdit}
                             />
                     }
 
@@ -171,7 +185,12 @@ const App: React.FC = () => {
                     }}
                 >
                     <div style={{ color: '#595959', fontSize: '14px' }}>
-                        <OperatorViewer isOcrEnabled={isOcrEnabled} isFullOcrEnabled={isFullOcrEnabled} ocrText={ocrText} fullText={fullText} />
+                        <OperatorViewer
+                            {...buttonsStatusEdit}
+                            currentFile={currentFile}
+                            ocrText={ocrText}
+                            fullText={fullText}
+                        />
                     </div>
                 </div>
             </div>

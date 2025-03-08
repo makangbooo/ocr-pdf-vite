@@ -7,13 +7,8 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 
-interface CurrentFile {
-	name?: string;
-	type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
-	data: string;
-	file?: File;
-}
 
+import { CurrentFile } from "../entityTypes.ts";
 
 const PdfViewer: React.FC<{ 	currentFile: CurrentFile;} > = ({currentFile}) => {
 

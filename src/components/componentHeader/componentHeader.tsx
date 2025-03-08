@@ -11,7 +11,7 @@ import {
 } from "@ant-design/icons";
 
 import {API_URLS} from "../../api/api.ts";
-
+import { CurrentFile } from "../entityTypes.ts";
 
 interface FileItem {
 	name: string;
@@ -20,18 +20,14 @@ interface FileItem {
 	children?: FileItem[];
 	file?: File;
 }
-interface CurrentFile {
-	name?: string;
-	type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
-	data: string;
-	file?: File;
-}
 
 interface ComponentHeaderInterface {
 	// 导入文件按钮
-	setFileTree: (file: FileItem[]) => void;
 	setSelectedPaths: ( paths: Set<string>) => void;
 	resetIsBatchOperation:( isBatchOperation: boolean) => void;
+	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
+	dirHandle: FileSystemDirectoryHandle | null;
+	setInternalFileTree: (fileTree: FileItem[]) => void;
 
 	currentFile: CurrentFile;
 
@@ -51,10 +47,10 @@ interface ComponentHeaderInterface {
 	// 批量操作
 	isBatchOperation: boolean;
 }
-// 使用 FileReader 将本地文件转换为 Base64
 // 使用 FileReader 将 blob URL 转换为 Base64
 const getBase64FromBlob = (currentFile: CurrentFile): Promise<string> => {
-	return new Promise(async (resolve, reject) => {
+	// eslint-disable-next-line no-async-promise-executor
+	return new Promise( async (resolve, reject) => {
 		try {
 			// 通过 fetch 获取 Blob
 			const response = await fetch(currentFile.data);
@@ -83,8 +79,10 @@ const getBase64FromBlob = (currentFile: CurrentFile): Promise<string> => {
 };
 const ComponentHeader: React.FC<ComponentHeaderInterface> =
 	({
-		 setFileTree,
 		 setSelectedPaths,
+		 setDirHandle,
+		 setInternalFileTree,
+
 		 resetIsBatchOperation,
 		 isBatchOperation,
 		 setIsOcrEnabled,
@@ -97,57 +95,53 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 isFullOcrEnabled,
 	}) => {
 
-	// 文件选择（）
-	const handleFolderSelect = (event: React.ChangeEvent<HTMLInputElement>) => {
-		const files = event.target.files;
-		if (!files) return;
 
-		const tree: FileItem[] = [];
-		const pathMap = new Map<string, FileItem>();
+	const [fullOcrLoading, setFullOcrLoading] = React.useState(false);
 
-		Array.from(files).forEach(file => {
-			const pathParts = file.webkitRelativePath.split('/');
-			let currentLevel = tree;
+	// // 文件选择（）
 
-			for (let i = 0; i < pathParts.length; i++) {
-				const part = pathParts[i];
-				const fullPath = pathParts.slice(0, i + 1).join('/');
+		// 初始化或同步文件夹
+	const handleFolderSelect = async () => {
+		try {
+			// @ts-expect-error 可能不存在
+			const handle = await window.showDirectoryPicker();
+			setDirHandle(handle);
+			console.log("handle",handle)
 
-				if (i === pathParts.length - 1) {
-					const fileItem: FileItem = {
-						name: part,
-						type: 'file',
-						path: fullPath,
-						file: file
-					};
-					currentLevel.push(fileItem);
-				} else {
-					let folder = pathMap.get(fullPath);
-					if (!folder) {
-						folder = {
-							name: part,
-							type: 'folder',
-							path: fullPath,
-							children: []
-						};
-						pathMap.set(fullPath, folder);
-						currentLevel.push(folder);
-					}
-					currentLevel = folder.children!;
-				}
+			const newTree = await buildFileTree(handle);
+			setInternalFileTree(newTree);
+			setSelectedPaths(new Set()); // 可选：清空已选择路径
+		} catch (error) {
+			console.error('Error syncing directory:', error);
+		}
+	};
+		// 读取文件夹并构建文件树
+	const buildFileTree = async (handle: FileSystemDirectoryHandle, path: string = ''): Promise<FileItem[]> => {
+		const items: FileItem[] = [];
+		// @ts-expect-error 可能不存在
+		for await (const [name, entry] of handle.entries()) {
+			const itemPath = `${path}/${name}`;
+			if (entry.kind === 'file') {
+				const file = await (entry as FileSystemFileHandle).getFile();
+				items.push({ name, type: 'file', path: itemPath, file });
+			} else if (entry.kind === 'directory') {
+				const children = await buildFileTree(entry as FileSystemDirectoryHandle, itemPath);
+				items.push({ name, type: 'folder', path: itemPath, children });
 			}
-		});
-
-		setFileTree(tree);
-		setSelectedPaths(new Set());
+		}
+		return items;
 	};
 
 	// 全文识别按钮
 	const onFullTextOcr = async () => {
-		if(!currentFile || (currentFile.data==="")) return;
-
-		// todo, 加入按钮loading
-		setIsFullOcrEnabled(!isFullOcrEnabled);
+		if(!currentFile || (currentFile.data==="") || isFullOcrEnabled) {
+			setIsFullOcrEnabled(!isFullOcrEnabled);
+			setFullText("");
+			return;
+		}
+		setFullText("");
+		setFullOcrLoading(true);
+		setIsFullOcrEnabled(true);
 		// todo 将imageUrl传入后端，http://1.95.55.32:1224/api/ocr
 		try {
 
@@ -169,6 +163,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 			const text = response.data.data;
 			setFullText(text)
 			console.log("转换后",text)
+			setFullOcrLoading(false);
+			setIsFullOcrEnabled(false);
 			return response.data;
 		} catch (error) {
 			console.error("Error:", error);
@@ -179,8 +175,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 	// 获取总状态，只允许一个按钮被选中
 	const getButtonStatus = () => {
-		return !!(isOcrEnabled || isTemplateEnabled || isFullOcrEnabled);
-
+		return (isOcrEnabled || isTemplateEnabled || isFullOcrEnabled);
 	}
 
 		return (
@@ -195,22 +190,13 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 						</Button>
 					</Col>
 					<Col span={3}>
-					<input
-							type="file"
-							id="folderInput"
-							// @ts-ignore
-							webkitdirectory="true"
-							directory="true"
-							style={{ display: 'none' }}
-							onChange={handleFolderSelect}
-							multiple
-						/>
 						<Button
 							type="primary"
 							icon={<UploadOutlined />}
 							size="small"
 							disabled={getButtonStatus()}
-							onClick={() => document.getElementById('folderInput')?.click()}
+							// onClick={() => document.getElementById('folderInput')?.click()}
+							onClick={handleFolderSelect}
 						>
 							导入文件
 						</Button>
@@ -219,6 +205,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 						<Button
 							type="primary"
 							icon={<ScanOutlined />}
+							disabled={isTemplateEnabled||isOcrEnabled||currentFile.type!=="image"}
+							loading={fullOcrLoading}
 							danger={isFullOcrEnabled}
 							onClick={onFullTextOcr} size="small"
 						>
@@ -231,6 +219,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							size="small"
 							icon={<SignatureOutlined />}
 							danger={isOcrEnabled}
+							disabled={isTemplateEnabled||isFullOcrEnabled||currentFile.type!=="image"}
 							onClick={() => setIsOcrEnabled(!isOcrEnabled)}>
 							{isOcrEnabled ? "关闭画框识别" : "画框识别"}
 						</Button>
@@ -240,6 +229,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							type="primary"
 							size="small"
 							icon={<GroupOutlined />}
+							disabled={isFullOcrEnabled||isOcrEnabled||currentFile.type!=="image"}
 							danger={isTemplateEnabled}
 							onClick={() => setIsTemplateEnabled(!isTemplateEnabled)}>
 							{isTemplateEnabled ? "关闭公文识别" : "公文识别"}
@@ -260,18 +250,18 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 			{/* 第二部分：次要功能 */}
 			<div style={{ maxHeight:"4vh",  background: '#f5f7fa',overflow: "auto" }}>
-			<Row gutter={[16, 16]} justify="center" align="middle">
-				<Col span={12}>
+			<Row justify="center" align="middle">
+				<Col span={8} offset={1}>
 					<Button block type="default" size="small" style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)' }}>
 						图像处理
 					</Button>
 				</Col>
-				<Col span={6}>
+				<Col span={5} offset={1}>
 					<Button block type="default" size="small" style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)' }}>
 						识别结果保存
 					</Button>
 				</Col>
-				<Col span={6}>
+				<Col span={4}  offset={1}>
 					<Button block type="default" size="small" style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)' }}>
 						档案上传
 					</Button>

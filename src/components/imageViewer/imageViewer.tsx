@@ -9,13 +9,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import {API_URLS} from "../../api/api.ts";
 
-
-interface CurrentFile {
-	name?: string;
-	type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
-	data: string;
-	file?: File;
-}
+import { CurrentFile } from "../entityTypes.ts";
 
 interface ImageViewerProps {
 	currentFile: CurrentFile;
@@ -64,6 +58,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 	const [isOCRDrawing, setIsOCRDrawing] = useState(false); // OCR绘制状态
 	const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 	const [rect, setRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
+	const [isOCRing, setIsOCRing] = useState(false); // OCR绘制状态
 
 	// 模版模式
 	const [template, ] = useState<Array<{ type: string, x: string; y: string; width: string; height: string }> | null>(
@@ -97,6 +92,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 		setStartPos({ x, y });
 		setRect({ x, y, width: 0, height: 0 });
 		setIsOCRDrawing(true);
+		setOcrText("正在识别...");
 	};
 
 	// 动态更新矩形
@@ -119,7 +115,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 	const handleMouseUp = async () => {
 		if (!isOCRDrawing || !rect || !containerRef.current) return;
 		setIsOCRDrawing(false);
-		setOcrText("正在识别...");
+		setIsOCRing(true);
 		try {
 			const canvas = await html2canvas(containerRef.current, {
 				x: rect.x + 2,
@@ -144,7 +140,9 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 			// 发送 POST 请求
 			const response = await axios.post(url, data);
 			setOcrText(response.data.data || "未识别到文字");
-
+			// 将response.data.data自动赋值到剪贴板
+			await navigator.clipboard.writeText(response.data.data);
+			setIsOCRing(false);
 
 
 
@@ -187,8 +185,10 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 					>
 						<Image src={currentFile.data} style={{height:  "88vh" }} preview={false}/>
 
-						{rect && isOcrEnabled && (
-							<Popover content={ocrText || "等待识别..."} title="ocr识别结果">
+						{
+							rect &&
+							// rect && isOcrEnabled && (
+							<Popover content={ocrText || "等待识别..."} title={<span>ocr识别结果{!isOCRing&&<span style={{color: "blue", fontSize: "small"}}>(已复制到剪贴板)</span>}</span>} open={!isOCRDrawing}>
 								<div
 									style={{
 										position: "absolute",
@@ -201,7 +201,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 									}}
 								/>
 							</Popover>
-						)}
+						// )
+						}
 						{
 							(isTemplateEnabled && template) && template.map((item) => {
 								return (

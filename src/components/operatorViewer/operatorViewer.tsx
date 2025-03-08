@@ -1,11 +1,14 @@
 import React from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 
-import {Col, Flex, Form, Input, List, Row, Tabs, Typography} from "antd";
+import {Button, Card, Col, Flex, Form, Input, List, Row, Tabs, Typography} from "antd";
 const LItem = List.Item;
 const FItem = Form.Item;
 
+import { CurrentFile } from "../entityTypes.ts";
+
 interface OperatorViewerProps {
+	currentFile: CurrentFile
 	isOcrEnabled: boolean;
 	ocrText: string;
 	isFullOcrEnabled: boolean;
@@ -17,6 +20,7 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 	{
 		// isOcrEnabled,
 		// isFullOcrEnabled,
+		currentFile,
 		fullText,
 		// ocrText,
 	}) => {
@@ -33,7 +37,7 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 					defaultActiveKey="1"
 					items={[
 						{
-							label: 'ocr识别结果',
+							label: '全文识别结果',
 							key: '1',
 							children:
 								// isOcrEnabled ?
@@ -48,7 +52,7 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 								// </Flex>
 						},
 						{
-							label: '数据项编辑',
+							label: '文档分行',
 							key: '2',
 							children:
 								<List
@@ -71,22 +75,52 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 							,
 						},
 						{
-							label: '上传档案系统',
+							label: '数据项编辑',
 							key: '3',
 							children:
 								<Form>
+									<Card title={'档案基本信息'} styles={{
+										header: {
+											fontSize: "16px",
+											background: "#e9f6ff",
+										},
+									}}>
 									<Row gutter={5}>
 										<Col span={8}>
-											<FItem label='字段1' name='clumn1' hasFeedback>
+											<FItem label='红头' name='clumn1' hasFeedback>
 												<Input />
 											</FItem>
 										</Col>
 										<Col span={8}>
-											<FItem label='字段2' name='clumn2' hasFeedback>
+											<FItem label='文件号' name='clumn2' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='主题' name='clumn3' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='发文单位' name='clumn4' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='发文日期' name='clumn5' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='正文' name='clumn6' hasFeedback>
 												<Input />
 											</FItem>
 										</Col>
 									</Row>
+										<Button type="primary" htmlType="submit">
+											档案上传
+										</Button>
+									</Card>
 								</Form>
 							,
 
