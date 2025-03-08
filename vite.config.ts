@@ -5,6 +5,7 @@ export default defineConfig(({ mode }) => {
 
   interface Env {
     VITE_API_BASE_URL: string;
+    OCR_API_BASE_URL: string;
   }
   const env = loadEnv(mode, process.cwd(), '') as unknown as Env;
   return {
@@ -14,6 +15,7 @@ export default defineConfig(({ mode }) => {
     },
     define: {
       'process.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL),
+      'process.env.OCR_API_BASE_URL': JSON.stringify(env.OCR_API_BASE_URL),
     },
   }
 })

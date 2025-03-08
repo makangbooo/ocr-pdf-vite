@@ -1,14 +1,32 @@
 import React from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 
-import {Flex, Input, List, Tabs, Typography} from "antd";
-const Item = List.Item;
+import {Button, Card, Col, Flex, Form, Input, List, Row, Tabs, Typography} from "antd";
+const LItem = List.Item;
+const FItem = Form.Item;
 
-const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ ocrText, isOcrEnabled }) => {
+import { CurrentFile } from "../entityTypes.ts";
 
-	console.log("ocrText",ocrText)
+interface OperatorViewerProps {
+	currentFile: CurrentFile
+	isOcrEnabled: boolean;
+	ocrText: string;
+	isFullOcrEnabled: boolean;
+	fullText: string;
+}
+
+
+const OperatorViewer: React.FC<OperatorViewerProps> = (
+	{
+		// isOcrEnabled,
+		// isFullOcrEnabled,
+		currentFile,
+		fullText,
+		// ocrText,
+	}) => {
+
 	// 遍历ocrText，将每一行数据存入data数组
-	const data = ocrText.split('\n');
+	const data = fullText.split('\n');
 
 
 	return (
@@ -19,20 +37,22 @@ const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ o
 					defaultActiveKey="1"
 					items={[
 						{
-							label: 'ocr识别结果',
+							label: '全文识别结果',
 							key: '1',
-							children: isOcrEnabled ?
+							children:
+								// isOcrEnabled ?
 								<Flex justify="center" align="center" style={{ height: '100%' }}>
-									<Typography.Text copyable>{ocrText}</Typography.Text>
-								</Flex>:
-								<Flex justify="center" align="center" style={{ height: '100%' }}>
-									<Typography.Title type="secondary" level={5} style={{ whiteSpace: 'nowrap' }}>
-										操作界面
-									</Typography.Title>
+									<Typography.Text copyable>{fullText}</Typography.Text>
 								</Flex>
+						// :
+								// <Flex justify="center" align="center" style={{ height: '100%' }}>
+								// 	<Typography.Title type="secondary" level={5} style={{ whiteSpace: 'nowrap' }}>
+								// 		操作界面
+								// 	</Typography.Title>
+								// </Flex>
 						},
 						{
-							label: '数据项编辑',
+							label: '文档分行',
 							key: '2',
 							children:
 								<List
@@ -40,7 +60,7 @@ const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ o
 									bordered
 									dataSource={data}
 									renderItem={(item,index) => (
-										<Item>
+										<LItem>
 											<Typography.Text
 												mark
 												style={{flexShrink: 0,marginRight: '8px'}}
@@ -49,16 +69,61 @@ const OperatorViewer: React.FC<{ ocrText: string,isOcrEnabled: boolean }> = ({ o
 												第{index+1}行:
 											</Typography.Text>
 											<Input placeholder="Basic usage" defaultValue={item}/>
-										</Item>
+										</LItem>
 									)}
 								/>
 							,
 						},
 						{
-							label: '上传档案系统',
+							label: '数据项编辑',
 							key: '3',
-							children: 'Tab 3',
-							disabled: true,//todo 用户上传文档后开放
+							children:
+								<Form>
+									<Card title={'档案基本信息'} styles={{
+										header: {
+											fontSize: "16px",
+											background: "#e9f6ff",
+										},
+									}}>
+									<Row gutter={5}>
+										<Col span={8}>
+											<FItem label='红头' name='clumn1' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='文件号' name='clumn2' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='主题' name='clumn3' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='发文单位' name='clumn4' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='发文日期' name='clumn5' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+										<Col span={8}>
+											<FItem label='正文' name='clumn6' hasFeedback>
+												<Input />
+											</FItem>
+										</Col>
+									</Row>
+										<Button type="primary" htmlType="submit">
+											档案上传
+										</Button>
+									</Card>
+								</Form>
+							,
+
 						},
 					]}
 				/>
