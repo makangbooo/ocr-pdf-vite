@@ -1,11 +1,12 @@
 import React from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 
-import {Button, Card, Col, Flex, Form, Input, List, Row, Tabs, Typography} from "antd";
+import {Button, Card, Col, DatePicker, Flex, Form, Input, List, Row, Tabs, Typography} from "antd";
 const LItem = List.Item;
 const FItem = Form.Item;
 
 import { CurrentFile } from "../entityTypes.ts";
+import TextArea from "antd/es/input/TextArea";
 
 interface OperatorViewerProps {
 	currentFile: CurrentFile
@@ -108,12 +109,12 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 										</Col>
 										<Col span={8}>
 											<FItem label='发文日期' name='clumn5' hasFeedback>
-												<Input />
+												<DatePicker />
 											</FItem>
 										</Col>
-										<Col span={8}>
+										<Col span={18}>
 											<FItem label='正文' name='clumn6' hasFeedback>
-												<Input />
+												<TextArea rows={5}/>
 											</FItem>
 										</Col>
 									</Row>
