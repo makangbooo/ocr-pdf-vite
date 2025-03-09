@@ -1,4 +1,3 @@
-"use client"; // ✅ 关键一步，Next.js 需要明确它是 Client Component
 import React, {useState, useRef, useEffect} from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import html2canvas from "html2canvas";
@@ -9,14 +8,17 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import {API_URLS} from "../../api/api.ts";
 
-import { CurrentFile } from "../entityTypes.ts";
+import {CurrentFile, DocumentMeta} from "../entityTypes.ts";
 
 interface ImageViewerProps {
 	currentFile: CurrentFile;
 	isOcrEnabled: boolean;
 	isTemplateEnabled: boolean;
 	setOcrText: (text: string) => void;
+	setCurrentFileMeta(meta: DocumentMeta): void;
 	ocrText: string;
+
+	setTemplateOcrLoading: (isTemplateOcrLoading: boolean) => void;
 }
 
 
@@ -51,7 +53,7 @@ const getBase64FromBlob = (imageUrl: string): Promise<string> => {
 	});
 };
 
-const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled }) => {
+const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled, setCurrentFileMeta,setTemplateOcrLoading }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	// OCR绘制矩形
@@ -61,12 +63,12 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 	const [isOCRing, setIsOCRing] = useState(false); // OCR绘制状态
 
 	// 模版模式
-	const [template, ] = useState<Array<{ type: string, x: string; y: string; width: string; height: string }> | null>(
+	const [template, ] = useState<Array<{ type: string, position: { x: string, y: string, width: string, height: string } }> >(
 		[
-			{ type:"title", x: "15%", y: "20%", width: "70%", height: "6%" },	// 红头
-			{ type:"content", x: "28%", y: "30.5%", width: "42%", height: "3%" },  // 文件号
-			{ type:"content", x: "20%", y: "35%", width: "59%", height: "9%" },  // 主题
-			{ type:"content", x: "12%", y: "47%", width: "75%", height: "44%" }	  // 正文
+			{ type:"redHeader", position: { x: "15%", y: "20%", width: "70%", height: "6%"} },	// 红头
+			{ type:"fileNumber", position: { x: "28%", y: "30.5%", width: "42%", height: "3%"} },  // 文件号
+			{ type:"fileTitle", position: { x: "20%", y: "35%", width: "59%", height: "9%"} },  // 主题
+			{ type:"content", position: { x: "12%", y: "47%", width: "75%", height: "44%"} }	  // 正文
 		]
 	);
 
@@ -82,6 +84,90 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 			setIsOCRDrawing(false);
 		}
 	}, [isOcrEnabled]);
+
+	// 监听isTemplateEnabled变化，当开启时，将template中的区域，分批发送给API_URLS.IMAGE_BASE64_OCR进行OCR识别
+	useEffect(() => {
+		// 如果模板未启用且无模板数据，直接重置状态并返回
+		if (!isTemplateEnabled || !template?.length) {
+			setRect(null);
+			setOcrText("");
+			setIsOCRDrawing(false);
+			return;
+		}
+
+		// 如果容器不存在，直接返回
+		if (!containerRef.current) return;
+
+		const processTemplateOCR = async () => {
+			setTemplateOcrLoading(true);
+			if (!containerRef.current) return;
+
+			try {
+				const container = {
+					width: containerRef.current.offsetWidth,
+					height: containerRef.current.offsetHeight
+				};
+
+				// 配置模板区域的转换参数
+				const getCanvasConfig = (index:number) => ({
+					x: (parseFloat(template[index].position.x) / 100) * container.width,
+					y: (parseFloat(template[index].position.y) / 100) * container.height,
+					width: (parseFloat(template[index].position.width) / 100) * container.width,
+					height: (parseFloat(template[index].position.height) / 100) * container.height,
+					scale: 20
+				});
+
+				// 并行处理所有区域的canvas转换
+				const canvases = await Promise.all(
+
+					[0, 1, 2, 3].map(index =>
+						html2canvas(containerRef.current, getCanvasConfig(index))
+					)
+				);
+
+				// 并行转换canvas为base64
+				const base64Images = await Promise.all(
+					canvases.map(canvas => getBase64FromBlob(canvas.toDataURL("image/png")))
+				);
+
+				// 创建请求数据模板
+				const createRequestData = (base64) => ({
+					base64,
+					options: { "data.format": "text" }
+				});
+
+				// 并行发送OCR请求
+				const responses = await Promise.all(
+					base64Images.map(data =>
+						axios.post(API_URLS.IMAGE_BASE64_OCR, createRequestData(data))
+					)
+				);
+
+				// 处理响应数据
+				const fileMeta = {
+					redHeader: responses[0].data.data,
+					fileNumber: responses[1].data.data,
+					fileTitle: responses[2].data.data,
+					// content: responses[3].data.data // 取消注释以启用第四个区域
+				};
+
+				console.log("OCR Results:", {
+					redHeader: fileMeta.redHeader,
+					fileNumber: fileMeta.fileNumber,
+					fileTitle: fileMeta.fileTitle
+				});
+
+				setCurrentFileMeta(fileMeta);
+			} catch (error) {
+				console.error("OCR 处理失败:", error);
+			} finally {
+				setTemplateOcrLoading(false);
+			}
+		};
+
+		processTemplateOCR();
+	}, [isTemplateEnabled, template]);
+
 
 	// 开始绘制（仅在 OCR 启用时生效）
 	const handleMouseDown = (e: React.MouseEvent) => {
@@ -159,6 +245,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 		}
 	};
 
+
+
 	return (
 		<>
 		{currentFile ? (
@@ -171,6 +259,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 				>
 					<div
 						ref={containerRef}
+						key={currentFile.data}
 						style={{
 							position: "relative",
 							width: "100%",
@@ -183,7 +272,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 						onMouseMove={handleMouseMove}
 						onMouseUp={handleMouseUp}
 					>
-						<Image src={currentFile.data} style={{height:  "88vh" }} preview={false}/>
+
+						<Image key={currentFile.data} src={currentFile.data} style={{height:  "88vh" }} preview={false}/>
 
 						{
 							rect &&
@@ -204,15 +294,17 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 						// )
 						}
 						{
-							(isTemplateEnabled && template) && template.map((item) => {
+							(isTemplateEnabled && template) && template.map((item,index) => {
 								return (
+									// todo 添加Popover
 									<div
+										key={index}
 										style={{
 											position: "absolute",
-											left: item.x,
-											top: item.y,
-											width: item.width,
-											height: item.height,
+											left: item.position.x,
+											top: item.position.y,
+											width: item.position.width,
+											height: item.position.height,
 											border: "2px dashed red",
 											backgroundColor: "rgba(255, 0, 0, 0.1)",
 										}}

@@ -1,11 +1,11 @@
-import React from "react";
+import React, {useEffect} from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 
-import {Button, Card, Col, DatePicker, Flex, Form, Input, List, Row, Tabs, Typography} from "antd";
+import {Button, Card, Col, DatePicker, Flex, Form, FormInstance, Input, List, Row, Tabs, Typography} from "antd";
 const LItem = List.Item;
 const FItem = Form.Item;
 
-import { CurrentFile } from "../entityTypes.ts";
+import {CurrentFile, DocumentMeta} from "../entityTypes.ts";
 import TextArea from "antd/es/input/TextArea";
 
 interface OperatorViewerProps {
@@ -14,6 +14,7 @@ interface OperatorViewerProps {
 	ocrText: string;
 	isFullOcrEnabled: boolean;
 	fullText: string;
+	currentFileMeta: DocumentMeta | null;
 }
 
 
@@ -23,11 +24,27 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 		// isFullOcrEnabled,
 		currentFile,
 		fullText,
+		currentFileMeta,
 		// ocrText,
 	}) => {
 
 	// 遍历ocrText，将每一行数据存入data数组
 	const data = fullText.split('\n');
+	const formRef = React.createRef<FormInstance>();
+
+
+	// 监听currentFileMeta，如果有变化，则更新表单数据
+	useEffect(() => {
+		if (formRef.current) {
+			formRef.current.setFieldsValue({
+				redHeader: currentFileMeta?.redHeader,
+				fileNumber: currentFileMeta?.fileNumber,
+				fileTitle: currentFileMeta?.fileTitle,
+				// clumn4: currentFileMeta?.documentDate,
+				// clumn5: currentFileMeta?.content,
+			});
+		}
+	}, [currentFileMeta]);
 
 
 	return (
@@ -41,16 +58,15 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 							label: '全文识别结果',
 							key: '1',
 							children:
-								// isOcrEnabled ?
-								<Flex justify="center" align="center" style={{ height: '100%' }}>
-									<Typography.Text copyable>{fullText}</Typography.Text>
-								</Flex>
-						// :
-								// <Flex justify="center" align="center" style={{ height: '100%' }}>
-								// 	<Typography.Title type="secondary" level={5} style={{ whiteSpace: 'nowrap' }}>
-								// 		操作界面
-								// 	</Typography.Title>
-								// </Flex>
+								data.map((item, index) => (
+									<Flex key={index} style={{marginBottom: '8px', alignItems: 'center'}}>
+										<Typography.Text copyable>
+											&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+											{item}
+										</Typography.Text>
+									</Flex>
+								))
+
 						},
 						{
 							label: '文档分行',
@@ -79,7 +95,20 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 							label: '数据项编辑',
 							key: '3',
 							children:
-								<Form>
+								<Form
+									ref={formRef}
+									layout="vertical"
+									wrapperCol={{span: 20}}
+									initialValues={
+										{
+											redHeader: currentFileMeta?.redHeader,
+											fileNumber: currentFileMeta?.fileNumber,
+											fileTitle: currentFileMeta?.fileTitle,
+											// clumn4: currentFileMeta.documentDate,
+											// clumn5: currentFileMeta.content,
+										}
+									}
+								>
 									<Card title={'档案基本信息'} styles={{
 										header: {
 											fontSize: "16px",
@@ -88,28 +117,28 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 									}}>
 									<Row gutter={5}>
 										<Col span={8}>
-											<FItem label='红头' name='clumn1' hasFeedback>
+											<FItem label='红头' name='redHeader' hasFeedback rules={[{required: true}]}>
 												<Input />
 											</FItem>
 										</Col>
 										<Col span={8}>
-											<FItem label='文件号' name='clumn2' hasFeedback>
+											<FItem label='文件号' name='fileNumber' hasFeedback rules={[{required: true}]}>
 												<Input />
 											</FItem>
 										</Col>
 										<Col span={8}>
-											<FItem label='主题' name='clumn3' hasFeedback>
+											<FItem label='主题' name='fileTitle' hasFeedback rules={[{required: true}]}>
 												<Input />
 											</FItem>
 										</Col>
 										<Col span={8}>
-											<FItem label='发文单位' name='clumn4' hasFeedback>
+											<FItem label='发文单位' name='clumn4' hasFeedback rules={[{required: true}]}>
 												<Input />
 											</FItem>
 										</Col>
 										<Col span={8}>
-											<FItem label='发文日期' name='clumn5' hasFeedback>
-												<DatePicker />
+											<FItem label='发文日期' name='clumn5' hasFeedback rules={[{required: true}]}>
+												<DatePicker style={{ width: '100%' }} />
 											</FItem>
 										</Col>
 										<Col span={18}>

@@ -5,6 +5,7 @@ import UploadButton from './components/uploadButton.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
+import {DocumentMeta} from "./components/entityTypes.ts";
 
 interface FileItem {
     name: string;
@@ -23,26 +24,29 @@ interface CurrentFile {
 
 const App: React.FC = () => {
 
-    // 文件列表
+    // 文件列表选择
     const [currentFile, setCurrentFile] = useState<CurrentFile>({data: ""});// 所选择的图片
-    const [isBatchOperation, setIsBatchOperation] = useState(false);// 是否批量操作
-
-    const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());// 批量操作所选择的文件
     const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null); // 文件夹句柄（eg: /Users/username/Documents）
     const [internalFileTree, setInternalFileTree] = useState<FileItem[]>(); // 文件树
+    const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());// 批量操作所选择的文件
 
 
-    // ocr模式
-    const [ocrText, setOcrText] = useState("");
-    const [isOcrEnabled, setIsOcrEnabled] = useState(false);	// OCR按钮状态
-
-    //全文识别模式
-    const [fullText,setFullText] = useState('');
-    const [isFullOcrEnabled, setIsFullOcrEnabled] = useState(false);	// OCR按钮状态
+    // 识别结果
+    const [ocrText, setOcrText] = useState(""); // 单张图片ocr识别结果
+    const [fullText,setFullText] = useState(''); // 全文识别结果
+    const [currentFileMeta, setCurrentFileMeta] = useState<DocumentMeta|null>(null); // 当前文件元数据
 
 
-    // 模版模式
+    //按钮禁用状态
+    const [isOcrEnabled, setIsOcrEnabled] = useState(false);
     const [isTemplateEnabled, setIsTemplateEnabled] = useState(false);
+    const [isFullOcrEnabled, setIsFullOcrEnabled] = useState(false);
+    const [isBatchOperation, setIsBatchOperation] = useState(false);// 是否批量操作
+    //按钮loading
+    const [fullOcrLoading, setFullOcrLoading] = useState(false);
+    const [templateOcrLoading, setTemplateOcrLoading] = useState(false);
+    const [ocrLoading, setOcrLoading] = useState(false);
+
 
     const buttonsStatusEdit = {
         // 按钮状态
@@ -50,11 +54,20 @@ const App: React.FC = () => {
         isFullOcrEnabled: isFullOcrEnabled,
         isTemplateEnabled: isTemplateEnabled,
         isBatchOperation: isBatchOperation,
+
         // 按钮操作
         setIsOcrEnabled: setIsOcrEnabled,
         setIsFullOcrEnabled: setIsFullOcrEnabled,
         setIsTemplateEnabled: setIsTemplateEnabled,
         setIsBatchOperation: setIsBatchOperation,
+
+        // 按钮loading
+        fullOcrLoading: fullOcrLoading,
+        setFullOcrLoading: setFullOcrLoading,
+        templateOcrLoading: templateOcrLoading,
+        setTemplateOcrLoading: setTemplateOcrLoading,
+        ocrLoading: ocrLoading,
+        setOcrLoading: setOcrLoading,
     }
 
     return (
@@ -160,9 +173,11 @@ const App: React.FC = () => {
                             />
                             :
                             <ImageViewer
+                                key={currentFile.data}
                                 currentFile={currentFile}
                                 setOcrText={setOcrText}
                                 ocrText={ocrText}
+                                setCurrentFileMeta={setCurrentFileMeta}
                                 {...buttonsStatusEdit}
                             />
                     }
@@ -190,6 +205,7 @@ const App: React.FC = () => {
                             currentFile={currentFile}
                             ocrText={ocrText}
                             fullText={fullText}
+                            currentFileMeta={currentFileMeta}
                         />
                     </div>
                 </div>
