@@ -46,6 +46,11 @@ interface ComponentHeaderInterface {
 
 	// 批量操作
 	isBatchOperation: boolean;
+
+	setTemplateOcrLoading: (isTemplateOcrLoading: boolean) => void;
+	templateOcrLoading: boolean;
+	fullOcrLoading:boolean;
+	setFullOcrLoading: (isFullOcrLoading: boolean) => void;
 }
 // 使用 FileReader 将 blob URL 转换为 Base64
 const getBase64FromBlob = (currentFile: CurrentFile): Promise<string> => {
@@ -93,10 +98,12 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 setFullText,
 		 setIsFullOcrEnabled,
 		 isFullOcrEnabled,
+
+		 fullOcrLoading,
+		 setFullOcrLoading,
+		 templateOcrLoading,
+		 // setTemplateOcrLoading,
 	}) => {
-
-
-	const [fullOcrLoading, setFullOcrLoading] = React.useState(false);
 
 	// // 文件选择（）
 
@@ -219,7 +226,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							size="small"
 							icon={<SignatureOutlined />}
 							danger={isOcrEnabled}
-							disabled={isTemplateEnabled||isFullOcrEnabled||currentFile.type!=="image"}
+							// disabled={isTemplateEnabled||isFullOcrEnabled||currentFile.type!=="image"}
 							onClick={() => setIsOcrEnabled(!isOcrEnabled)}>
 							{isOcrEnabled ? "关闭画框识别" : "画框识别"}
 						</Button>
@@ -229,6 +236,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							type="primary"
 							size="small"
 							icon={<GroupOutlined />}
+							loading={templateOcrLoading}
 							disabled={isFullOcrEnabled||isOcrEnabled||currentFile.type!=="image"}
 							danger={isTemplateEnabled}
 							onClick={() => setIsTemplateEnabled(!isTemplateEnabled)}>

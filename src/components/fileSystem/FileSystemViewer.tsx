@@ -1,7 +1,7 @@
 // components/FileSystemViewer.tsx
 import React, { useEffect } from 'react';
 import { Menu, Checkbox, Button } from 'antd';
-import { FolderOutlined, FileImageOutlined } from '@ant-design/icons';
+import {FolderOutlined, FileImageOutlined, SyncOutlined} from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { getFileType } from "../../utils/fileTypeIdentify.tsx";
 import { CurrentFile } from "../entityTypes.ts";
@@ -63,6 +63,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			let handle = dirHandle;
 			if (!handle) {
 				// 首次加载时选择文件夹
+				// @ts-expect-error 可能不存在
 				handle = await window.showDirectoryPicker();
 				// @ts-expect-error 可能不存在
 				setDirHandle(handle);
@@ -113,6 +114,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 				name: clickedItem.name,
 				type: fileType,
 				data: URL.createObjectURL(clickedItem.file),
+				file: clickedItem.file,
 			};
 			setCurrentFile(currentClick);
 		}
@@ -169,7 +171,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 		<>
 			{internalFileTree.length > 0 ? (
 				<>
-					<Button onClick={syncDirectory} style={{ marginBottom: 16 }}>
+					<Button icon={<SyncOutlined />} onClick={syncDirectory} style={{ marginBottom: 16 }}>
 						同步文件夹
 					</Button>
 					<Menu
