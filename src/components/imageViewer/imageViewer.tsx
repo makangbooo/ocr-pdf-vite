@@ -114,7 +114,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 					y: (parseFloat(template[index].position.y) / 100) * container.height,
 					width: (parseFloat(template[index].position.width) / 100) * container.width,
 					height: (parseFloat(template[index].position.height) / 100) * container.height,
-					scale: 20
+					scale: 10
 				});
 
 				// 并行处理所有区域的canvas转换

@@ -5,7 +5,8 @@ import UploadButton from './components/uploadButton.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
-import {DocumentMeta} from "./components/entityTypes.ts";
+import {CurrentFile, DocumentMeta} from "./components/entityTypes.ts";
+import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
 
 interface FileItem {
     name: string;
@@ -15,17 +16,11 @@ interface FileItem {
     file?: File;
 }
 
-interface CurrentFile {
-    name?: string;
-    type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
-    data: string;
-    file?: File;
-}
 
 const App: React.FC = () => {
 
     // 文件列表选择
-    const [currentFile, setCurrentFile] = useState<CurrentFile>({data: ""});// 所选择的图片
+    const [currentFile, setCurrentFile] = useState<CurrentFile>({data: ""}); // 所选择的当前文件
     const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null); // 文件夹句柄（eg: /Users/username/Documents）
     const [internalFileTree, setInternalFileTree] = useState<FileItem[]>(); // 文件树
     const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());// 批量操作所选择的文件
@@ -47,6 +42,7 @@ const App: React.FC = () => {
     const [templateOcrLoading, setTemplateOcrLoading] = useState(false);
     const [ocrLoading, setOcrLoading] = useState(false);
 
+    console.log("currentFile", currentFile)
 
     const buttonsStatusEdit = {
         // 按钮状态
@@ -172,6 +168,9 @@ const App: React.FC = () => {
                                 currentFile={currentFile}
                             />
                             :
+                            currentFile.type === 'ofd' ?
+                                <OfdViewer currentFile={currentFile}/>
+                                :
                             <ImageViewer
                                 key={currentFile.data}
                                 currentFile={currentFile}

@@ -114,6 +114,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 				name: clickedItem.name,
 				type: fileType,
 				data: URL.createObjectURL(clickedItem.file),
+				file: clickedItem.file,
 			};
 			setCurrentFile(currentClick);
 		}
