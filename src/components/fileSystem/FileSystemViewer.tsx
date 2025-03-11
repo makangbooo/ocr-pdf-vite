@@ -260,6 +260,52 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 		}
 	};
 
+	// 转化为双层ofd
+	const convert2ofd = async (): Promise<void> => {
+		// 1. 输入验证
+		if (!selectedPaths?.length) {
+			console.error('No file selected.');
+			return;
+		}
+
+		try {
+			// 2. 使用Promise.all并提取转换逻辑
+			const convertFileToBase64 = async (file: {name: string, data: File}): Promise<{ name: string; file: string }> => {
+				const currentFile: CurrentFile = {
+					name: file.name,
+					data: URL.createObjectURL(file.data),
+					file: file.data,
+				};
+
+				const base64Data = await getBase64FromBlob(currentFile);
+				return {
+					name: currentFile.name,
+					file: base64Data,
+				};
+			};
+
+			// 3. 并行处理文件转换
+			const requestData = await Promise.all(
+				selectedPaths.map((file) => {
+					console.log('Processing file:', file);
+					return convertFileToBase64(file);
+				})
+			);
+
+			// 4. 发送请求
+			const response = await axios.post(
+				`${process.env.VITE_API_BASE_URL}/FileTypeConvert/imageToOFD`,
+				requestData
+			);
+
+			console.log('Conversion successful:', response.data);
+			return response.data; // 根据需要返回数据
+		} catch (error) {
+			console.error('PDF conversion failed:', error);
+			throw error; // 或根据需求处理错误
+		}
+	};
+
 	return (
 		<>
 			{internalFileTree.length > 0 ? (
@@ -271,13 +317,20 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 						mode="inline"
 						items={getMenuItems(internalFileTree)}
 						onClick={handleMenuClick}
-						style={{height: 'calc(100% - 120px)', overflow: 'auto'}}
+						style={{height: 'calc(100% - 200px)', overflow: 'auto'}}
 						defaultOpenKeys={internalFileTree.map(item => item.path)}
 					/>
 					<UploadButton
 						name={'转化为双层pdf'}
 						buttonType={''}
 						onClick={convert2pdf}
+						disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
+					/>
+					<br/><br/>
+					<UploadButton
+						name={'转化为双层ofd'}
+						buttonType={''}
+						onClick={convert2ofd}
 						disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
 					/>
 				</>

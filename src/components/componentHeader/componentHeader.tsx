@@ -105,9 +105,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 // setTemplateOcrLoading,
 	}) => {
 
-	// // 文件选择（）
-
-		// 初始化或同步文件夹
+	// 文件选择（）
 	const handleFolderSelect = async () => {
 		try {
 			// @ts-expect-error 可能不存在
@@ -248,7 +246,10 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							<Button type="primary" size="small" icon={<FileAddOutlined />}>公文模版定制</Button>
 					</Col>
 					<Col span={3}>
-						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={() => resetIsBatchOperation(!isBatchOperation)}>
+						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={() => {
+							resetIsBatchOperation(!isBatchOperation)
+							setSelectedPaths([])
+						}}>
 							批量处理
 						</Button>
 					</Col>
