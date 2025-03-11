@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import FileSystemViewer from './components/fileSystem/FileSystemViewer.tsx';
 import ComponentHeader from './components/componentHeader/componentHeader.tsx';
-import UploadButton from './components/uploadButton.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
@@ -23,7 +22,7 @@ const App: React.FC = () => {
     const [currentFile, setCurrentFile] = useState<CurrentFile>({data: ""}); // 所选择的当前文件
     const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null); // 文件夹句柄（eg: /Users/username/Documents）
     const [internalFileTree, setInternalFileTree] = useState<FileItem[]>(); // 文件树
-    const [selectedPaths, setSelectedPaths] = useState<Set<string>>(new Set());// 批量操作所选择的文件
+    const [selectedPaths, setSelectedPaths] = useState<{name: string, data: File}[]>([]);// 批量操作所选择的文件
 
 
     // 识别结果
@@ -43,6 +42,7 @@ const App: React.FC = () => {
     const [ocrLoading, setOcrLoading] = useState(false);
 
     console.log("currentFile", currentFile)
+    console.log("selectedPaths", selectedPaths)
 
     const buttonsStatusEdit = {
         // 按钮状态
@@ -125,14 +125,7 @@ const App: React.FC = () => {
                         setInternalFileTree={setInternalFileTree}
                         internalFileTree={internalFileTree || []}
                     />
-                    <UploadButton
-                        name={'转化为双层pdf'}
-                        buttonType={''}
-                        onClick={() => {
-                            throw new Error('Function not implemented.');
-                        }}
-                        disabled={ selectedPaths.size === 0}
-                    />
+
                 </div>
 
                 {/* 页面2 */}
@@ -166,10 +159,13 @@ const App: React.FC = () => {
                         currentFile.type === 'pdf' ?
                             <PdfViewer
                                 currentFile={currentFile}
+                                setOcrText={setOcrText}
+                                ocrText={ocrText}
+                                {...buttonsStatusEdit}
                             />
                             :
                             currentFile.type === 'ofd' ?
-                                <OfdViewer currentFile={currentFile}/>
+                                <OfdViewer currentFile={currentFile} {...buttonsStatusEdit}/>
                                 :
                             <ImageViewer
                                 key={currentFile.data}
@@ -177,6 +173,7 @@ const App: React.FC = () => {
                                 setOcrText={setOcrText}
                                 ocrText={ocrText}
                                 setCurrentFileMeta={setCurrentFileMeta}
+                                currentFileMeta={currentFileMeta}
                                 {...buttonsStatusEdit}
                             />
                     }

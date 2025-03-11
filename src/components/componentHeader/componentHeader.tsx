@@ -23,7 +23,7 @@ interface FileItem {
 
 interface ComponentHeaderInterface {
 	// 导入文件按钮
-	setSelectedPaths: ( paths: Set<string>) => void;
+	setSelectedPaths: (paths: {name: string, data: File}[] | []) => void;
 	resetIsBatchOperation:( isBatchOperation: boolean) => void;
 	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
 	dirHandle: FileSystemDirectoryHandle | null;
@@ -117,7 +117,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 			const newTree = await buildFileTree(handle);
 			setInternalFileTree(newTree);
-			setSelectedPaths(new Set()); // 可选：清空已选择路径
+			// 清空已选择路径
+			setSelectedPaths([]);
 		} catch (error) {
 			console.error('Error syncing directory:', error);
 		}

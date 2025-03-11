@@ -28,9 +28,7 @@ const PdfViewer: React.FC<{ refreshOcrText: (text: string) => void, file: string
 	const defaultLayoutPluginInstance = defaultLayoutPlugin();
 	// 模版模式
 	const [isTemplateEnabled, setIsTemplateEnabled] = useState(false);
-	window.addEventListener('click', (e) => {
-		console.log("坐标x",e.x,"坐标y",e.y)
-	})
+
 	const [template, ] = useState<Array<{ type: string, x: string; y: string; width: string; height: string }> | null>(
 		[
 			{ type:"title", x: "36%", y: "20%", width: "10%", height: "5%" },	// 主题
