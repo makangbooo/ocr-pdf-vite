@@ -16,6 +16,7 @@ interface ImageViewerProps {
 	isTemplateEnabled: boolean;
 	setOcrText: (text: string) => void;
 	setCurrentFileMeta(meta: DocumentMeta): void;
+	currentFileMeta: DocumentMeta | null;
 	ocrText: string;
 
 	setTemplateOcrLoading: (isTemplateOcrLoading: boolean) => void;
@@ -53,7 +54,7 @@ const getBase64FromBlob = (imageUrl: string): Promise<string> => {
 	});
 };
 
-const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled, setCurrentFileMeta,setTemplateOcrLoading }) => {
+const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled, setCurrentFileMeta, currentFileMeta, setTemplateOcrLoading }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	// OCR绘制矩形
@@ -66,7 +67,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 	const [template, ] = useState<Array<{ type: string, position: { x: string, y: string, width: string, height: string } }> >(
 		[
 			{ type:"redHeader", position: { x: "15%", y: "20%", width: "70%", height: "6%"} },	// 红头
-			{ type:"fileNumber", position: { x: "28%", y: "30.5%", width: "42%", height: "3%"} },  // 文件号
+			{ type:"fileNumber", position: { x: "28%", y: "31%", width: "42%", height: "3%"} },  // 文件号
 			{ type:"fileTitle", position: { x: "20%", y: "35%", width: "59%", height: "9%"} },  // 主题
 			{ type:"content", position: { x: "12%", y: "47%", width: "75%", height: "44%"} }	  // 正文
 		]
@@ -148,13 +149,14 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 					redHeader: responses[0].data.data,
 					fileNumber: responses[1].data.data,
 					fileTitle: responses[2].data.data,
-					// content: responses[3].data.data // 取消注释以启用第四个区域
+					content: responses[3].data.data // 取消注释以启用第四个区域
 				};
 
 				console.log("OCR Results:", {
 					redHeader: fileMeta.redHeader,
 					fileNumber: fileMeta.fileNumber,
-					fileTitle: fileMeta.fileTitle
+					fileTitle: fileMeta.fileTitle,
+					content: fileMeta.content
 				});
 
 				setCurrentFileMeta(fileMeta);
@@ -208,7 +210,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 				y: rect.y + 2,
 				width: rect.width,
 				height: rect.height,
-				scale: 20,
+				scale: 10,
 			});
 			const imgData = canvas.toDataURL("image/png");
 			// const blob = await (await fetch(imgData)).blob();
@@ -297,6 +299,22 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 							(isTemplateEnabled && template) && template.map((item,index) => {
 								return (
 									// todo 添加Popover
+									<Popover content={
+										() => {
+											const type = item.type
+											if (currentFileMeta) {
+												if (type === "redHeader") {
+													return currentFileMeta.redHeader
+												} else if (type === "fileNumber") {
+													return currentFileMeta.fileNumber
+												} else if (type === "fileTitle") {
+													return currentFileMeta.fileTitle
+												} else if (type === "content") {
+													return currentFileMeta.content
+												}
+											} else return ""
+										}
+									} title={<span>ocr识别结果</span>}>
 									<div
 										key={index}
 										style={{
@@ -309,6 +327,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 											backgroundColor: "rgba(255, 0, 0, 0.1)",
 										}}
 									/>
+									</Popover>
 								)
 							})
 						}

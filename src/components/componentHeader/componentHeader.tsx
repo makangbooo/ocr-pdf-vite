@@ -23,7 +23,7 @@ interface FileItem {
 
 interface ComponentHeaderInterface {
 	// 导入文件按钮
-	setSelectedPaths: ( paths: Set<string>) => void;
+	setSelectedPaths: (paths: {name: string, data: File}[] | []) => void;
 	resetIsBatchOperation:( isBatchOperation: boolean) => void;
 	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
 	dirHandle: FileSystemDirectoryHandle | null;
@@ -105,9 +105,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 // setTemplateOcrLoading,
 	}) => {
 
-	// // 文件选择（）
-
-		// 初始化或同步文件夹
+	// 文件选择（）
 	const handleFolderSelect = async () => {
 		try {
 			// @ts-expect-error 可能不存在
@@ -117,7 +115,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 			const newTree = await buildFileTree(handle);
 			setInternalFileTree(newTree);
-			setSelectedPaths(new Set()); // 可选：清空已选择路径
+			// 清空已选择路径
+			setSelectedPaths([]);
 		} catch (error) {
 			console.error('Error syncing directory:', error);
 		}
@@ -247,7 +246,10 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							<Button type="primary" size="small" icon={<FileAddOutlined />}>公文模版定制</Button>
 					</Col>
 					<Col span={3}>
-						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={() => resetIsBatchOperation(!isBatchOperation)}>
+						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={() => {
+							resetIsBatchOperation(!isBatchOperation)
+							setSelectedPaths([])
+						}}>
 							批量处理
 						</Button>
 					</Col>

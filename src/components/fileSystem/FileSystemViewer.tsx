@@ -1,10 +1,13 @@
 // components/FileSystemViewer.tsx
 import React, { useEffect } from 'react';
-import { Menu, Checkbox, Button } from 'antd';
-import {FolderOutlined, FileImageOutlined, SyncOutlined} from '@ant-design/icons';
+import {Menu, Checkbox, Button, Dropdown} from 'antd';
+import {FolderOutlined, FileImageOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { getFileType } from "../../utils/fileTypeIdentify.tsx";
 import { CurrentFile } from "../entityTypes.ts";
+import UploadButton from "../uploadButton.tsx";
+import axios from "axios";
+import {handleDownload} from "../../utils/fileDownload.tsx";
 
 interface FileItem {
 	name: string;
@@ -17,16 +20,50 @@ interface FileItem {
 interface FileSystemViewerProps {
 	setCurrentFile: (url: CurrentFile) => void;
 	isBatchOperation: boolean;
-	selectedPaths: Set<string>;
-	setSelectedPaths: (paths: Set<string>) => void;
+	selectedPaths: {name: string, data: File}[] | undefined;
+	setSelectedPaths: (paths: {name: string, data: File}[] | []) => void;
 
 	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
 	dirHandle: FileSystemDirectoryHandle | null;
 	internalFileTree: FileItem[];
 	setInternalFileTree: (fileTree: FileItem[]) => void;
+
+	setIsBatchOperation:( isBatchOperation: boolean) => void;
 }
 
 type MenuItem = Required<MenuProps>['items'][number];
+
+// 使用 FileReader 将 blob URL 转换为 Base64
+const getBase64FromBlob = (currentFile: CurrentFile): Promise<string> => {
+	// eslint-disable-next-line no-async-promise-executor
+	return new Promise( async (resolve, reject) => {
+		try {
+			// 通过 fetch 获取 Blob
+			const response = await fetch(currentFile.data);
+			if (!response.ok) {
+				throw new Error('Failed to fetch blob from URL');
+			}
+			const blob = await response.blob();
+
+			const reader = new FileReader();
+
+			reader.onload = () => {
+				const base64String = reader.result as string; // 完整的 Data URL
+				console.log('Data URL:', base64String);
+				const base64Only = base64String.split(',')[1]; // 只取 Base64 部分
+				resolve(base64Only); // 返回纯 Base64 字符串
+			};
+
+			reader.onerror = (error) => {
+				reject(error); // 读取失败时返回错误
+			};
+
+			reader.readAsDataURL(blob); // 读取 Blob 为 Data URL
+		} catch (error) {
+			reject(error); // fetch 或其他错误
+		}
+	});
+};
 
 const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 															   setCurrentFile,
@@ -37,6 +74,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 															   dirHandle,
 															   internalFileTree,
 															   setInternalFileTree,
+															   setIsBatchOperation
 														   }) => {
 	// dirHandle 用于存储文件夹句柄
 
@@ -48,10 +86,10 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			const itemPath = `${path}/${name}`;
 			if (entry.kind === 'file') {
 				const file = await (entry as FileSystemFileHandle).getFile();
-				items.push({ name, type: 'file', path: itemPath, file });
+				items.push({name, type: 'file', path: itemPath, file});
 			} else if (entry.kind === 'directory') {
 				const children = await buildFileTree(entry as FileSystemDirectoryHandle, itemPath);
-				items.push({ name, type: 'folder', path: itemPath, children });
+				items.push({name, type: 'folder', path: itemPath, children});
 			}
 		}
 		return items;
@@ -71,7 +109,8 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			// @ts-expect-error 可能不存在
 			const newTree = await buildFileTree(handle);
 			setInternalFileTree(newTree);
-			setSelectedPaths(new Set()); // 可选：清空已选择路径
+			// setSelectedPaths(new Set()); // 可选：清空已选择路径
+			setSelectedPaths([]);
 		} catch (error) {
 			console.error('Error syncing directory:', error);
 		}
@@ -86,23 +125,24 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 
 	// 将文件树转换为 Menu 所需的 items 格式
 	const getMenuItems = (items: FileItem[]): MenuItem[] => {
-		return items.map(item => ({
-			key: item.path,
-			icon: item.type === 'folder' ? <FolderOutlined /> : <FileImageOutlined />,
-			label: (
-				<div style={{ display: 'flex', alignItems: 'center' }}>
-					{isBatchOperation && (
-						<Checkbox
-							checked={selectedPaths.has(item.path)}
-							onChange={e => handleCheckboxChange(item.path, item.type === 'folder', e.target.checked)}
-							onClick={e => e.stopPropagation()}
-						/>
-					)}
-					<span style={{ marginLeft: 8 }}>{item.name}</span>
-				</div>
-			),
-			children: item.children ? getMenuItems(item.children) : undefined,
-		}));
+		return items.map(item => (
+			{
+				key: item.path,
+				icon: item.type === 'folder' ? <FolderOutlined/> : <FileImageOutlined/>,
+				label: (
+					<div style={{display: 'flex', alignItems: 'center'}}>
+						{isBatchOperation && (
+							<Checkbox
+								checked={selectedPaths?.some(p => p.name === item.name)}
+								onChange={e => handleCheckboxChange(item, item.type === 'folder', e.target.checked)}
+								onClick={e => e.stopPropagation()}
+							/>
+						)}
+						<span style={{marginLeft: 8}}>{item.name}</span>
+					</div>
+				),
+				children: item.children ? getMenuItems(item.children) : undefined,
+			}));
 	};
 
 	// 处理菜单点击事件
@@ -133,10 +173,10 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 	};
 
 	// 获取所有子文件路径
-	const getAllChildPaths = (item: FileItem): string[] => {
-		const paths: string[] = [];
+	const getAllChildPaths = (item: FileItem): FileItem[] => {
+		const paths: FileItem[] = [];
 		if (item.type === 'file') {
-			paths.push(item.path);
+			paths.push(item);
 		} else if (item.children) {
 			item.children.forEach(child => {
 				paths.push(...getAllChildPaths(child));
@@ -146,47 +186,223 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 	};
 
 	// 处理选择框变化
-	const handleCheckboxChange = (path: string, isFolder: boolean, checked: boolean) => {
-		const newSelected = new Set(selectedPaths);
-		const item = findItemByPath(internalFileTree, path);
+	const handleCheckboxChange = (file: FileItem, isFolder: boolean, checked: boolean) => {
+
+
+		console.log("handleCheckboxChange.file", file)
+		const newSelected = selectedPaths ? [...selectedPaths] : []
+		const item = findItemByPath(internalFileTree, file.path);
 
 		if (isFolder && item?.children) {
 			const childPaths = getAllChildPaths(item);
 			if (checked) {
-				childPaths.forEach(p => newSelected.add(p));
+				childPaths.forEach(p => newSelected.push({name: p.name, data: p.file}));
 			} else {
-				childPaths.forEach(p => newSelected.delete(p));
+				childPaths.forEach(p => {
+					const index = newSelected.findIndex(selected => selected.name === p.name);
+					if (index !== -1) {
+						newSelected.splice(index, 1);
+					}
+				});
 			}
 		} else {
 			if (checked) {
-				newSelected.add(path);
+				newSelected.push({name: file.name, data: file.file})
 			} else {
-				newSelected.delete(path);
+				const index = newSelected.findIndex(selected => selected.name === file.name);
+				if (index !== -1) {
+					newSelected.splice(index, 1);
+				}
 			}
+			setSelectedPaths([...newSelected]);
 		}
-		setSelectedPaths(newSelected);
+	}
+
+	// 转化为双层pdf
+	const convert2pdf = async (): Promise<void> => {
+		// 1. 输入验证
+		if (!selectedPaths?.length) {
+			console.error('No file selected.');
+			return;
+		}
+
+		try {
+			// 2. 使用Promise.all并提取转换逻辑
+			const convertFileToBase64 = async (file: {name: string, data: File}): Promise<{ name: string; file: string }> => {
+				const currentFile: CurrentFile = {
+					name: file.name,
+					data: URL.createObjectURL(file.data),
+					file: file.data,
+				};
+
+				const base64Data = await getBase64FromBlob(currentFile);
+				return {
+					name: currentFile.name,
+					file: base64Data,
+				};
+			};
+
+			// 3. 并行处理文件转换
+			const requestData = await Promise.all(
+				selectedPaths.map((file) => {
+					console.log('Processing file:', file);
+					return convertFileToBase64(file);
+				})
+			);
+
+			// 4. 发送请求
+			const response = await axios.post(
+				`${process.env.VITE_API_BASE_URL}/FileTypeConvert/imageToPDF`,
+				requestData
+			);
+
+			console.log('Conversion successful:', response.data);
+			const downloadUrl = `${process.env.VITE_API_BASE_URL}/${response.data.name}`
+			// 根据链接下载文件
+			// handleDownload(downloadUrl, response.data.name);
+			window.open(downloadUrl, "_blank");
+
+
+			return response.data; // 根据需要返回数据
+		} catch (error) {
+			console.error('PDF conversion failed:', error);
+			throw error; // 或根据需求处理错误
+		}
 	};
+
+	// 转化为双层ofd
+	const convert2ofd = async (): Promise<void> => {
+		// 1. 输入验证
+		if (!selectedPaths?.length) {
+			console.error('No file selected.');
+			return;
+		}
+
+		try {
+			// 2. 使用Promise.all并提取转换逻辑
+			const convertFileToBase64 = async (file: {name: string, data: File}): Promise<{ name: string; file: string }> => {
+				const currentFile: CurrentFile = {
+					name: file.name,
+					data: URL.createObjectURL(file.data),
+					file: file.data,
+				};
+
+				const base64Data = await getBase64FromBlob(currentFile);
+				return {
+					name: currentFile.name,
+					file: base64Data,
+				};
+			};
+
+			// 3. 并行处理文件转换
+			const requestData = await Promise.all(
+				selectedPaths.map((file) => {
+					console.log('Processing file:', file);
+					return convertFileToBase64(file);
+				})
+			);
+
+			// 4. 发送请求
+			const response = await axios.post(
+				`${process.env.VITE_API_BASE_URL}/FileTypeConvert/imageToOFD`,
+				requestData
+			);
+			const downloadUrl = `${process.env.VITE_API_BASE_URL}/${response.data.name}`
+			// 根据链接下载文件
+			// handleDownload(downloadUrl, response.data.name);
+			window.open(downloadUrl, "_blank");
+			console.log('Conversion successful:', response.data);
+			return response.data; // 根据需要返回数据
+		} catch (error) {
+			console.error('PDF conversion failed:', error);
+			throw error; // 或根据需求处理错误
+		}
+	};
+
+	const items: MenuProps['items'] = [
+		{
+			key: '1',
+			label: (
+				<UploadButton
+					name={'导出为双层ofd'}
+					buttonType={''}
+					onClick={convert2ofd}
+					disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
+				/>
+			),
+		},
+		{
+			key: '2',
+			label: (
+				<UploadButton
+					name={'导出为双层pdf'}
+					buttonType={''}
+					onClick={convert2pdf}
+					disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
+				/>
+			),
+		},
+	];
+
 
 	return (
 		<>
 			{internalFileTree.length > 0 ? (
 				<>
-					<Button icon={<SyncOutlined />} onClick={syncDirectory} style={{ marginBottom: 16 }}>
+					<Button icon={<SyncOutlined/>} onClick={syncDirectory} style={{marginBottom: 16}}>
 						同步文件夹
+					</Button>
+					&nbsp;
+					<Button icon={<UnorderedListOutlined />} type={"primary"}
+							onClick={
+								()=>{
+									setIsBatchOperation(!isBatchOperation)
+									setSelectedPaths([])
+								}
+							}
+							style={{marginBottom: 16}}>
+						批量处理
 					</Button>
 					<Menu
 						mode="inline"
 						items={getMenuItems(internalFileTree)}
 						onClick={handleMenuClick}
-						style={{ height: 'calc(100% - 120px)', overflow: 'auto' }}
+						style={{height: 'calc(100% - 200px)', overflow: 'auto'}}
 						defaultOpenKeys={internalFileTree.map(item => item.path)}
 					/>
+
+					<Dropdown
+						menu={{items}}
+					 	placement="top" arrow={{ pointAtCenter: true }}>
+						<Button
+							type="primary"
+							size="large"
+							block
+							disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
+						>
+							导出文件
+						</Button>
+					</Dropdown>
+
+					{/*<UploadButton*/}
+					{/*	name={'转化为双层pdf'}*/}
+					{/*	buttonType={''}*/}
+					{/*	onClick={convert2pdf}*/}
+					{/*	disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}*/}
+					{/*/>*/}
+					{/*<br/><br/>*/}
+					{/*<UploadButton*/}
+					{/*	name={'转化为双层ofd'}*/}
+					{/*	buttonType={''}*/}
+					{/*	onClick={convert2ofd}*/}
+					{/*	disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}*/}
+					{/*/>*/}
 				</>
 			) : (
 				<p>请点击“导入文件”或“扫描仪控制”以加载文件夹内容。</p>
 			)}
+
 		</>
 	);
-};
-
+	};
 export default FileSystemViewer;

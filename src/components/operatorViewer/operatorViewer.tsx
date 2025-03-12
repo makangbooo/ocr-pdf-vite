@@ -105,7 +105,7 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 											fileNumber: currentFileMeta?.fileNumber,
 											fileTitle: currentFileMeta?.fileTitle,
 											// clumn4: currentFileMeta.documentDate,
-											// clumn5: currentFileMeta.content,
+											content: currentFileMeta?.content,
 										}
 									}
 								>
@@ -141,9 +141,9 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 												<DatePicker style={{ width: '100%' }} />
 											</FItem>
 										</Col>
-										<Col span={18}>
-											<FItem label='正文' name='clumn6' hasFeedback>
-												<TextArea rows={5}/>
+										<Col span={24}>
+											<FItem label='正文' name='content' hasFeedback>
+												<TextArea rows={8}/>
 											</FItem>
 										</Col>
 									</Row>
