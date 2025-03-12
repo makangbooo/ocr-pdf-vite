@@ -28,9 +28,9 @@ const useStyle = createStyles(({ prefixCls, css }) => ({
 
 interface UploadButtonProps {
 	name: string;
-	buttonType: string;
-	onClick: () => void;
-	disabled: boolean;
+	buttonType?: string;
+	onClick?: () => void;
+	disabled?: boolean;
 }
 
 

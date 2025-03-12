@@ -1,12 +1,13 @@
 // components/FileSystemViewer.tsx
 import React, { useEffect } from 'react';
-import { Menu, Checkbox, Button } from 'antd';
-import {FolderOutlined, FileImageOutlined, SyncOutlined} from '@ant-design/icons';
+import {Menu, Checkbox, Button, Dropdown} from 'antd';
+import {FolderOutlined, FileImageOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import { getFileType } from "../../utils/fileTypeIdentify.tsx";
 import { CurrentFile } from "../entityTypes.ts";
 import UploadButton from "../uploadButton.tsx";
 import axios from "axios";
+import {handleDownload} from "../../utils/fileDownload.tsx";
 
 interface FileItem {
 	name: string;
@@ -26,6 +27,8 @@ interface FileSystemViewerProps {
 	dirHandle: FileSystemDirectoryHandle | null;
 	internalFileTree: FileItem[];
 	setInternalFileTree: (fileTree: FileItem[]) => void;
+
+	setIsBatchOperation:( isBatchOperation: boolean) => void;
 }
 
 type MenuItem = Required<MenuProps>['items'][number];
@@ -71,6 +74,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 															   dirHandle,
 															   internalFileTree,
 															   setInternalFileTree,
+															   setIsBatchOperation
 														   }) => {
 	// dirHandle 用于存储文件夹句柄
 
@@ -253,6 +257,12 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			);
 
 			console.log('Conversion successful:', response.data);
+			const downloadUrl = `${process.env.VITE_API_BASE_URL}/${response.data.name}`
+			// 根据链接下载文件
+			// handleDownload(downloadUrl, response.data.name);
+			window.open(downloadUrl, "_blank");
+
+
 			return response.data; // 根据需要返回数据
 		} catch (error) {
 			console.error('PDF conversion failed:', error);
@@ -297,7 +307,10 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 				`${process.env.VITE_API_BASE_URL}/FileTypeConvert/imageToOFD`,
 				requestData
 			);
-
+			const downloadUrl = `${process.env.VITE_API_BASE_URL}/${response.data.name}`
+			// 根据链接下载文件
+			// handleDownload(downloadUrl, response.data.name);
+			window.open(downloadUrl, "_blank");
 			console.log('Conversion successful:', response.data);
 			return response.data; // 根据需要返回数据
 		} catch (error) {
@@ -306,12 +319,49 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 		}
 	};
 
+	const items: MenuProps['items'] = [
+		{
+			key: '1',
+			label: (
+				<UploadButton
+					name={'导出为双层ofd'}
+					buttonType={''}
+					onClick={convert2ofd}
+					disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
+				/>
+			),
+		},
+		{
+			key: '2',
+			label: (
+				<UploadButton
+					name={'导出为双层pdf'}
+					buttonType={''}
+					onClick={convert2pdf}
+					disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
+				/>
+			),
+		},
+	];
+
+
 	return (
 		<>
 			{internalFileTree.length > 0 ? (
 				<>
 					<Button icon={<SyncOutlined/>} onClick={syncDirectory} style={{marginBottom: 16}}>
 						同步文件夹
+					</Button>
+					&nbsp;
+					<Button icon={<UnorderedListOutlined />} type={"primary"}
+							onClick={
+								()=>{
+									setIsBatchOperation(!isBatchOperation)
+									setSelectedPaths([])
+								}
+							}
+							style={{marginBottom: 16}}>
+						批量处理
 					</Button>
 					<Menu
 						mode="inline"
@@ -320,19 +370,33 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 						style={{height: 'calc(100% - 200px)', overflow: 'auto'}}
 						defaultOpenKeys={internalFileTree.map(item => item.path)}
 					/>
-					<UploadButton
-						name={'转化为双层pdf'}
-						buttonType={''}
-						onClick={convert2pdf}
-						disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
-					/>
-					<br/><br/>
-					<UploadButton
-						name={'转化为双层ofd'}
-						buttonType={''}
-						onClick={convert2ofd}
-						disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
-					/>
+
+					<Dropdown
+						menu={{items}}
+					 	placement="top" arrow={{ pointAtCenter: true }}>
+						<Button
+							type="primary"
+							size="large"
+							block
+							disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}
+						>
+							导出文件
+						</Button>
+					</Dropdown>
+
+					{/*<UploadButton*/}
+					{/*	name={'转化为双层pdf'}*/}
+					{/*	buttonType={''}*/}
+					{/*	onClick={convert2pdf}*/}
+					{/*	disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}*/}
+					{/*/>*/}
+					{/*<br/><br/>*/}
+					{/*<UploadButton*/}
+					{/*	name={'转化为双层ofd'}*/}
+					{/*	buttonType={''}*/}
+					{/*	onClick={convert2ofd}*/}
+					{/*	disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}*/}
+					{/*/>*/}
 				</>
 			) : (
 				<p>请点击“导入文件”或“扫描仪控制”以加载文件夹内容。</p>
