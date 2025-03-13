@@ -9,7 +9,7 @@ import {CurrentFile, DocumentMeta} from "../entityTypes.ts";
 import TextArea from "antd/es/input/TextArea";
 
 interface OperatorViewerProps {
-	currentFile: CurrentFile
+	currentFile?: CurrentFile
 	isOcrEnabled: boolean;
 	ocrText: string;
 	isFullOcrEnabled: boolean;

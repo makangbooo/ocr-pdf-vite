@@ -3,28 +3,20 @@ import React, { useEffect } from 'react';
 import {Menu, Checkbox, Button, Dropdown} from 'antd';
 import {FolderOutlined, FileImageOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import { getFileType } from "../../utils/fileTypeIdentify.tsx";
-import { CurrentFile } from "../entityTypes.ts";
+import {findItemByPath, getBase64FromBlob, getFileType} from "../../utils/fileTypeIdentify.tsx";
+import {CurrentFile, FileItem} from "../entityTypes.ts";
 import UploadButton from "../uploadButton.tsx";
 import axios from "axios";
-import {handleDownload} from "../../utils/fileDownload.tsx";
 
-interface FileItem {
-	name: string;
-	type: 'file' | 'folder';
-	path: string;
-	children?: FileItem[];
-	file?: File;
-}
 
 interface FileSystemViewerProps {
 	setCurrentFile: (url: CurrentFile) => void;
 	isBatchOperation: boolean;
-	selectedPaths: {name: string, data: File}[] | undefined;
-	setSelectedPaths: (paths: {name: string, data: File}[] | []) => void;
+	selectedPaths: FileItem[] | undefined;
+	setSelectedPaths: (paths: FileItem[] | []) => void;
 
 	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
-	dirHandle: FileSystemDirectoryHandle | null;
+	dirHandle?: FileSystemDirectoryHandle | null; // dirHandle 用于存储文件夹句柄
 	internalFileTree: FileItem[];
 	setInternalFileTree: (fileTree: FileItem[]) => void;
 
@@ -32,38 +24,6 @@ interface FileSystemViewerProps {
 }
 
 type MenuItem = Required<MenuProps>['items'][number];
-
-// 使用 FileReader 将 blob URL 转换为 Base64
-const getBase64FromBlob = (currentFile: CurrentFile): Promise<string> => {
-	// eslint-disable-next-line no-async-promise-executor
-	return new Promise( async (resolve, reject) => {
-		try {
-			// 通过 fetch 获取 Blob
-			const response = await fetch(currentFile.data);
-			if (!response.ok) {
-				throw new Error('Failed to fetch blob from URL');
-			}
-			const blob = await response.blob();
-
-			const reader = new FileReader();
-
-			reader.onload = () => {
-				const base64String = reader.result as string; // 完整的 Data URL
-				console.log('Data URL:', base64String);
-				const base64Only = base64String.split(',')[1]; // 只取 Base64 部分
-				resolve(base64Only); // 返回纯 Base64 字符串
-			};
-
-			reader.onerror = (error) => {
-				reject(error); // 读取失败时返回错误
-			};
-
-			reader.readAsDataURL(blob); // 读取 Blob 为 Data URL
-		} catch (error) {
-			reject(error); // fetch 或其他错误
-		}
-	});
-};
 
 const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 															   setCurrentFile,
@@ -76,24 +36,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 															   setInternalFileTree,
 															   setIsBatchOperation
 														   }) => {
-	// dirHandle 用于存储文件夹句柄
 
-	// 读取文件夹并构建文件树
-	const buildFileTree = async (handle: FileSystemDirectoryHandle, path: string = ''): Promise<FileItem[]> => {
-		const items: FileItem[] = [];
-		// @ts-expect-error 可能不存在
-		for await (const [name, entry] of handle.entries()) {
-			const itemPath = `${path}/${name}`;
-			if (entry.kind === 'file') {
-				const file = await (entry as FileSystemFileHandle).getFile();
-				items.push({name, type: 'file', path: itemPath, file});
-			} else if (entry.kind === 'directory') {
-				const children = await buildFileTree(entry as FileSystemDirectoryHandle, itemPath);
-				items.push({name, type: 'folder', path: itemPath, children});
-			}
-		}
-		return items;
-	};
 
 	// 初始化或同步文件夹
 	const syncDirectory = async () => {
@@ -153,23 +96,12 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			const currentClick = {
 				name: clickedItem.name,
 				type: fileType,
-				data: URL.createObjectURL(clickedItem.file),
 				file: clickedItem.file,
+				data: URL.createObjectURL(clickedItem.file),
 			};
+			// 唯一定义currentFile
 			setCurrentFile(currentClick);
 		}
-	};
-
-	// 根据路径查找文件项
-	const findItemByPath = (items: FileItem[], path: string): FileItem | undefined => {
-		for (const item of items) {
-			if (item.path === path) return item;
-			if (item.children) {
-				const found = findItemByPath(item.children, path);
-				if (found) return found;
-			}
-		}
-		return undefined;
 	};
 
 	// 获取所有子文件路径
@@ -188,15 +120,13 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 	// 处理选择框变化
 	const handleCheckboxChange = (file: FileItem, isFolder: boolean, checked: boolean) => {
 
-
-		console.log("handleCheckboxChange.file", file)
 		const newSelected = selectedPaths ? [...selectedPaths] : []
 		const item = findItemByPath(internalFileTree, file.path);
 
 		if (isFolder && item?.children) {
 			const childPaths = getAllChildPaths(item);
 			if (checked) {
-				childPaths.forEach(p => newSelected.push({name: p.name, data: p.file}));
+				childPaths.forEach(() => newSelected.push(item));
 			} else {
 				childPaths.forEach(p => {
 					const index = newSelected.findIndex(selected => selected.name === p.name);
@@ -207,7 +137,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			}
 		} else {
 			if (checked) {
-				newSelected.push({name: file.name, data: file.file})
+				newSelected.push(file)
 			} else {
 				const index = newSelected.findIndex(selected => selected.name === file.name);
 				if (index !== -1) {
@@ -228,11 +158,15 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 
 		try {
 			// 2. 使用Promise.all并提取转换逻辑
-			const convertFileToBase64 = async (file: {name: string, data: File}): Promise<{ name: string; file: string }> => {
+			const convertFileToBase64 = async (file: FileItem): Promise<{ name: string; file: string }> => {
+
 				const currentFile: CurrentFile = {
 					name: file.name,
-					data: URL.createObjectURL(file.data),
-					file: file.data,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					data: URL.createObjectURL(file.file),
+					path: file.path,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					file: file.file,
 				};
 
 				const base64Data = await getBase64FromBlob(currentFile);
@@ -280,11 +214,14 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 
 		try {
 			// 2. 使用Promise.all并提取转换逻辑
-			const convertFileToBase64 = async (file: {name: string, data: File}): Promise<{ name: string; file: string }> => {
+			const convertFileToBase64 = async (file: FileItem): Promise<{ name: string; file: string }> => {
 				const currentFile: CurrentFile = {
 					name: file.name,
-					data: URL.createObjectURL(file.data),
-					file: file.data,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					data: URL.createObjectURL(file.file),
+					path: file.path,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					file: file.file,
 				};
 
 				const base64Data = await getBase64FromBlob(currentFile);
@@ -344,7 +281,6 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 		},
 	];
 
-
 	return (
 		<>
 			{internalFileTree.length > 0 ? (
@@ -383,20 +319,6 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 							导出文件
 						</Button>
 					</Dropdown>
-
-					{/*<UploadButton*/}
-					{/*	name={'转化为双层pdf'}*/}
-					{/*	buttonType={''}*/}
-					{/*	onClick={convert2pdf}*/}
-					{/*	disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}*/}
-					{/*/>*/}
-					{/*<br/><br/>*/}
-					{/*<UploadButton*/}
-					{/*	name={'转化为双层ofd'}*/}
-					{/*	buttonType={''}*/}
-					{/*	onClick={convert2ofd}*/}
-					{/*	disabled={(selectedPaths === undefined || selectedPaths.length <= 0)}*/}
-					{/*/>*/}
 				</>
 			) : (
 				<p>请点击“导入文件”或“扫描仪控制”以加载文件夹内容。</p>

@@ -1,13 +1,5 @@
-import React, {useState} from "react";
+import React from "react";
 import { Col, Form, Input, Modal, Row, Select } from "antd";
-
-interface FileItem {
-	name: string;
-	type: 'file' | 'folder';
-	path: string;
-	children?: FileItem[];
-	file?: File;
-}
 
 interface FileTypeConverter{
 	fileTypeConvertModal: boolean;
@@ -16,8 +8,8 @@ interface FileTypeConverter{
 
 const FileTypeConverter: React.FC<FileTypeConverter> = ({fileTypeConvertModal,setFileTypeConvertModal}) => {
 	// const formRef = React.createRef<FormInstance>();
-	const [inputFileTree, setInputFileTree] = useState<FileItem[]>(); // 输入文件树
-	const [outputFilePath, setOutputPath] = useState<string>(); // 输出路径
+	// const [inputFileTree, setInputFileTree] = useState<FileItem[]>(); // 输入文件树
+	// const [outputFilePath, setOutputPath] = useState<string>(); // 输出路径
 	const [form] = Form.useForm();
 
 
@@ -54,57 +46,57 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({fileTypeConvertModal,se
 
 // 处理输入路径选择
 	const onInputPathSelect = async () => {
-		try {
-			// 使用 showOpenFilePicker API 选择文件或文件夹
-			// @ts-expect-error showOpenFilePicker不支持老版本的浏览器，且只支持https以及localhost请求
-			const fileHandles = await window.showOpenFilePicker({
-				multiple: true,
-				types: inputType.map(type => ({
-					description: type.label,
-					accept: {
-						[type.value === 'image' ? 'image/*' : `application/${type.value}`]:
-							type.value === 'image' ? ['.png', '.jpg', '.jpeg'] : `.${type.value.toLowerCase()}`
-					}
-				}))
-			});
-
-			const fileItems: FileItem[] = await Promise.all(
-				fileHandles.map(async (handle: any) => {
-					const file = await handle.getFile();
-					return {
-						name: file.name,
-						type: 'file' as const,
-						path: file.path || file.name,
-						file: file
-					};
-				})
-			);
-
-			setInputFileTree(fileItems);
-			form.setFieldsValue({ InputPath: fileItems.map(item => item.path).join(', ') });
-		} catch (error) {
-			console.log('取消选择或发生错误:', error);
-		}
+		// try {
+		// 	// 使用 showOpenFilePicker API 选择文件或文件夹
+		// 	// @ts-expect-error showOpenFilePicker不支持老版本的浏览器，且只支持https以及localhost请求
+		// 	const fileHandles = await window.showOpenFilePicker({
+		// 		multiple: true,
+		// 		types: inputType.map(type => ({
+		// 			description: type.label,
+		// 			accept: {
+		// 				[type.value === 'image' ? 'image/*' : `application/${type.value}`]:
+		// 					type.value === 'image' ? ['.png', '.jpg', '.jpeg'] : `.${type.value.toLowerCase()}`
+		// 			}
+		// 		}))
+		// 	});
+		//
+		// 	const fileItems: FileItem[] = await Promise.all(
+		// 		fileHandles.map(async (handle: any) => {
+		// 			const file = await handle.getFile();
+		// 			return {
+		// 				name: file.name,
+		// 				type: 'file' as const,
+		// 				path: file.path || file.name,
+		// 				file: file
+		// 			};
+		// 		})
+		// 	);
+		//
+		// 	setInputFileTree(fileItems);
+		// 	form.setFieldsValue({ InputPath: fileItems.map(item => item.path).join(', ') });
+		// } catch (error) {
+		// 	console.log('取消选择或发生错误:', error);
+		// }
 	};
 
 // 处理输出路径选择
 // 修改 onOutputPathSelect 函数
 	const onOutputPathSelect = () => {
-		const input = document.createElement('input');
-		input.type = 'file';
-		input.webkitdirectory = true; // 允许选择文件夹
-
-		input.onchange = (e: any) => {
-			const files = e.target.files;
-			if (files && files.length > 0) {
-				// 获取第一个文件的绝对路径并提取目录
-				const absolutePath = files[0].path.replace(/[^/\\]+$/, '');
-				setOutputPath(absolutePath);
-				form.setFieldsValue({ Outpath: absolutePath });
-			}
-		};
-
-		input.click();
+		// const input = document.createElement('input');
+		// input.type = 'file';
+		// input.webkitdirectory = true; // 允许选择文件夹
+		//
+		// input.onchange = (e: any) => {
+		// 	const files = e.target.files;
+		// 	if (files && files.length > 0) {
+		// 		// 获取第一个文件的绝对路径并提取目录
+		// 		const absolutePath = files[0].path.replace(/[^/\\]+$/, '');
+		// 		setOutputPath(absolutePath);
+		// 		form.setFieldsValue({ Outpath: absolutePath });
+		// 	}
+		// };
+		//
+		// input.click();
 	};
 
 	return (
