@@ -9,9 +9,10 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import {API_URLS} from "../../api/api.ts";
 
 import {CurrentFile, DocumentMeta} from "../entityTypes.ts";
+import { getBase64FromBlobUrl} from "../../utils/fileTypeIdentify.tsx";
 
 interface ImageViewerProps {
-	currentFile: CurrentFile;
+	currentFile?: CurrentFile;
 	isOcrEnabled: boolean;
 	isTemplateEnabled: boolean;
 	setOcrText: (text: string) => void;
@@ -21,38 +22,6 @@ interface ImageViewerProps {
 
 	setTemplateOcrLoading: (isTemplateOcrLoading: boolean) => void;
 }
-
-
-
-// 使用 FileReader 将 blob URL 转换为 Base64
-const getBase64FromBlob = (imageUrl: string): Promise<string> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			// 通过 fetch 获取 Blob
-			const response = await fetch(imageUrl);
-			if (!response.ok) {
-				throw new Error('Failed to fetch blob from URL');
-			}
-			const blob = await response.blob();
-
-			const reader = new FileReader();
-
-			reader.onload = () => {
-				const base64String = reader.result as string; // 完整的 Data URL
-				const base64Only = base64String.split(',')[1]; // 只取 Base64 部分
-				resolve(base64Only); // 返回纯 Base64 字符串
-			};
-
-			reader.onerror = (error) => {
-				reject(error); // 读取失败时返回错误
-			};
-
-			reader.readAsDataURL(blob); // 读取 Blob 为 Data URL
-		} catch (error) {
-			reject(error); // fetch 或其他错误
-		}
-	});
-};
 
 const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled, setCurrentFileMeta, currentFileMeta, setTemplateOcrLoading }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -120,19 +89,21 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 
 				// 并行处理所有区域的canvas转换
 				const canvases = await Promise.all(
-
 					[0, 1, 2, 3].map(index =>
-						html2canvas(containerRef.current, getCanvasConfig(index))
+						html2canvas(containerRef.current!, getCanvasConfig(index)) //使用非空断言操作符 !
 					)
 				);
 
+				if (canvases.length === 0) return
 				// 并行转换canvas为base64
+
 				const base64Images = await Promise.all(
-					canvases.map(canvas => getBase64FromBlob(canvas.toDataURL("image/png")))
+					canvases.map(canvas => getBase64FromBlobUrl(canvas.toDataURL("image/png")))
 				);
+				console.log("base64Images", base64Images)
 
 				// 创建请求数据模板
-				const createRequestData = (base64) => ({
+				const createRequestData = (base64: string) => ({
 					base64,
 					options: { "data.format": "text" }
 				});
@@ -214,7 +185,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 			});
 			const imgData = canvas.toDataURL("image/png");
 			// const blob = await (await fetch(imgData)).blob();
-			const requestData = await getBase64FromBlob(imgData)
+			const requestData = await getBase64FromBlobUrl(imgData)
 
 			// 目标 API URL
 			const url = API_URLS.IMAGE_BASE64_OCR;
@@ -339,23 +310,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 					<Flex justify="center" align="center" style={{ height: '100%', width: "100%" }}>
 						<Typography.Title type="secondary" level={5}>pdf文件</Typography.Title>
 					</Flex>
-					{/*{*/}
-					{/*	template && template.map((item) => {*/}
-					{/*		return (*/}
-					{/*			<div*/}
-					{/*				style={{*/}
-					{/*					position: "absolute",*/}
-					{/*					left: item.x,*/}
-					{/*					top: item.y,*/}
-					{/*					width: item.width,*/}
-					{/*					height: item.height,*/}
-					{/*					border: "2px dashed red",*/}
-					{/*					backgroundColor: "rgba(255, 0, 0, 0.1)",*/}
-					{/*				}}*/}
-					{/*			/>*/}
-					{/*		)*/}
-					{/*	})*/}
-					{/*}*/}
 				</>
 			)}
 		</>

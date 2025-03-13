@@ -11,25 +11,20 @@ import {
 } from "@ant-design/icons";
 
 import {API_URLS} from "../../api/api.ts";
-import { CurrentFile } from "../entityTypes.ts";
+import {CurrentFile, FileItem} from "../entityTypes.ts";
+import FileTypeConverter from "./fileTypeConverter.tsx";
+import {buildFileTree, getBase64FromBlob} from "../../utils/fileTypeIdentify.tsx";
 
-interface FileItem {
-	name: string;
-	type: 'file' | 'folder';
-	path: string;
-	children?: FileItem[];
-	file?: File;
-}
 
 interface ComponentHeaderInterface {
 	// 导入文件按钮
-	setSelectedPaths: (paths: {name: string, data: File}[] | []) => void;
+	setSelectedPaths: (paths: FileItem[] | []) => void;
 	resetIsBatchOperation:( isBatchOperation: boolean) => void;
 	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
-	dirHandle: FileSystemDirectoryHandle | null;
+	dirHandle?: FileSystemDirectoryHandle | null;
 	setInternalFileTree: (fileTree: FileItem[]) => void;
 
-	currentFile: CurrentFile;
+	currentFile?: CurrentFile;
 
 	// 画框识别
 	isOcrEnabled: boolean;
@@ -52,44 +47,13 @@ interface ComponentHeaderInterface {
 	fullOcrLoading:boolean;
 	setFullOcrLoading: (isFullOcrLoading: boolean) => void;
 }
-// 使用 FileReader 将 blob URL 转换为 Base64
-const getBase64FromBlob = (currentFile: CurrentFile): Promise<string> => {
-	// eslint-disable-next-line no-async-promise-executor
-	return new Promise( async (resolve, reject) => {
-		try {
-			// 通过 fetch 获取 Blob
-			const response = await fetch(currentFile.data);
-			if (!response.ok) {
-				throw new Error('Failed to fetch blob from URL');
-			}
-			const blob = await response.blob();
 
-			const reader = new FileReader();
-
-			reader.onload = () => {
-				const base64String = reader.result as string; // 完整的 Data URL
-				const base64Only = base64String.split(',')[1]; // 只取 Base64 部分
-				resolve(base64Only); // 返回纯 Base64 字符串
-			};
-
-			reader.onerror = (error) => {
-				reject(error); // 读取失败时返回错误
-			};
-
-			reader.readAsDataURL(blob); // 读取 Blob 为 Data URL
-		} catch (error) {
-			reject(error); // fetch 或其他错误
-		}
-	});
-};
 const ComponentHeader: React.FC<ComponentHeaderInterface> =
 	({
 		 setSelectedPaths,
 		 setDirHandle,
 		 setInternalFileTree,
 
-		 resetIsBatchOperation,
-		 isBatchOperation,
 		 setIsOcrEnabled,
 		 isOcrEnabled,
 		 setIsTemplateEnabled,
@@ -105,37 +69,21 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 // setTemplateOcrLoading,
 	}) => {
 
-	// 文件选择（）
+	const [fileTypeConvertModal, setFileTypeConvertModal] = React.useState<boolean>(false);
+
+	// 文件选择，构建文件树赋值给internalFileTree
 	const handleFolderSelect = async () => {
 		try {
-			// @ts-expect-error 可能不存在
-			const handle = await window.showDirectoryPicker();
-			setDirHandle(handle);
-			console.log("handle",handle)
-
-			const newTree = await buildFileTree(handle);
+			// @ts-expect-error window.showDirectoryPicker() 对旧版本浏览器不支持，且只支持https和localhost
+			const dirHandle = await window.showDirectoryPicker();
+			setDirHandle(dirHandle);
+			const newTree = await buildFileTree(dirHandle);
 			setInternalFileTree(newTree);
-			// 清空已选择路径
+			// 清空已选择文件
 			setSelectedPaths([]);
 		} catch (error) {
 			console.error('Error syncing directory:', error);
 		}
-	};
-		// 读取文件夹并构建文件树
-	const buildFileTree = async (handle: FileSystemDirectoryHandle, path: string = ''): Promise<FileItem[]> => {
-		const items: FileItem[] = [];
-		// @ts-expect-error 可能不存在
-		for await (const [name, entry] of handle.entries()) {
-			const itemPath = `${path}/${name}`;
-			if (entry.kind === 'file') {
-				const file = await (entry as FileSystemFileHandle).getFile();
-				items.push({ name, type: 'file', path: itemPath, file });
-			} else if (entry.kind === 'directory') {
-				const children = await buildFileTree(entry as FileSystemDirectoryHandle, itemPath);
-				items.push({ name, type: 'folder', path: itemPath, children });
-			}
-		}
-		return items;
 	};
 
 	// 全文识别按钮
@@ -179,12 +127,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 	}
 
-	// 获取总状态，只允许一个按钮被选中
-	const getButtonStatus = () => {
-		return (isOcrEnabled || isTemplateEnabled || isFullOcrEnabled);
-	}
-
-		return (
+	return (
 		<div style={{ maxHeight:"12vh",  background: '#f5f7fa',overflow: "auto" }}>
 			<Divider style={{ margin: '1vh 0' }} />
 			{/* 第一部分：主要功能工具栏 */}
@@ -200,7 +143,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							type="primary"
 							icon={<UploadOutlined />}
 							size="small"
-							disabled={getButtonStatus()}
+							disabled={isFullOcrEnabled||isOcrEnabled||isTemplateEnabled}
 							// onClick={() => document.getElementById('folderInput')?.click()}
 							onClick={handleFolderSelect}
 						>
@@ -211,7 +154,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 						<Button
 							type="primary"
 							icon={<ScanOutlined />}
-							disabled={isTemplateEnabled||isOcrEnabled||currentFile.type!=="image"}
+							disabled={isTemplateEnabled||isOcrEnabled||currentFile?.type!=="image"}
 							loading={fullOcrLoading}
 							danger={isFullOcrEnabled}
 							onClick={onFullTextOcr} size="small"
@@ -236,7 +179,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							size="small"
 							icon={<GroupOutlined />}
 							loading={templateOcrLoading}
-							disabled={isFullOcrEnabled||isOcrEnabled||currentFile.type!=="image"}
+							disabled={isFullOcrEnabled||isOcrEnabled||currentFile?.type!=="image"}
 							danger={isTemplateEnabled}
 							onClick={() => setIsTemplateEnabled(!isTemplateEnabled)}>
 							{isTemplateEnabled ? "关闭公文识别" : "公文识别"}
@@ -246,11 +189,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							<Button type="primary" size="small" icon={<FileAddOutlined />}>公文模版定制</Button>
 					</Col>
 					<Col span={3}>
-						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={() => {
-							resetIsBatchOperation(!isBatchOperation)
-							setSelectedPaths([])
-						}}>
-							批量处理
+						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={()=>setFileTypeConvertModal(true)}>
+							批量转换
 						</Button>
 					</Col>
 				</Row>
@@ -278,13 +218,13 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 				</Col>
 			</Row>
 			</div>
+
+			<FileTypeConverter
+				fileTypeConvertModal={fileTypeConvertModal}
+				setFileTypeConvertModal={setFileTypeConvertModal}
+			/>
 		</div>
-
-
 	);
-
-
-
 
 }
 export default ComponentHeader;

@@ -12,6 +12,11 @@ export default defineConfig(({ mode }) => {
     plugins: [react()],
     server: {
       port: 3000,
+      host: '0.0.0.0', // 允许外部访问
+      allowedHosts: [
+        'www.makangbo.cn', // 允许的域名
+        '1.95.55.33',     // 允许 IP 访问
+      ],
     },
     define: {
       'process.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL),

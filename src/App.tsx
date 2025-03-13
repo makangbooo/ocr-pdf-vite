@@ -4,45 +4,38 @@ import ComponentHeader from './components/componentHeader/componentHeader.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
-import {CurrentFile, DocumentMeta} from "./components/entityTypes.ts";
+import {CurrentFile, DocumentMeta, FileItem} from "./components/entityTypes.ts";
 import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
-
-interface FileItem {
-    name: string;
-    type: 'file' | 'folder';
-    path: string;
-    children?: FileItem[];
-    file?: File;
-}
 
 
 const App: React.FC = () => {
 
     // 文件列表选择
-    const [currentFile, setCurrentFile] = useState<CurrentFile>({data: ""}); // 所选择的当前文件
-    const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle | null>(null); // 文件夹句柄（eg: /Users/username/Documents）
-    const [internalFileTree, setInternalFileTree] = useState<FileItem[]>(); // 文件树
-    const [selectedPaths, setSelectedPaths] = useState<{name: string, data: File}[]>([]);// 批量操作所选择的文件
+    const [currentFile, setCurrentFile] = useState<CurrentFile>(); // 所选择的当前文件
+    const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle>(); // 文件夹句柄（eg: /Users/username/Documents）
+    const [internalFileTree, setInternalFileTree] = useState<FileItem[]>([]); // 文件树
 
+    //todo 将{name: string, data: File}替换为FileItem 其中file不为空
+    const [selectedPaths, setSelectedPaths] = useState<FileItem[]>([]);// 批量操作所选择的文件
 
     // 识别结果
     const [ocrText, setOcrText] = useState(""); // 单张图片ocr识别结果
     const [fullText,setFullText] = useState(''); // 全文识别结果
     const [currentFileMeta, setCurrentFileMeta] = useState<DocumentMeta|null>(null); // 当前文件元数据
 
-
     //按钮禁用状态
     const [isOcrEnabled, setIsOcrEnabled] = useState(false);
     const [isTemplateEnabled, setIsTemplateEnabled] = useState(false);
     const [isFullOcrEnabled, setIsFullOcrEnabled] = useState(false);
     const [isBatchOperation, setIsBatchOperation] = useState(false);// 是否批量操作
+
     //按钮loading
     const [fullOcrLoading, setFullOcrLoading] = useState(false);
     const [templateOcrLoading, setTemplateOcrLoading] = useState(false);
     const [ocrLoading, setOcrLoading] = useState(false);
 
     console.log("currentFile", currentFile)
-    console.log("selectedPaths", selectedPaths)
+    console.log("internalFileTree", internalFileTree)
 
     const buttonsStatusEdit = {
         // 按钮状态
@@ -156,7 +149,7 @@ const App: React.FC = () => {
                     />
                     {/*todo 这里判断所选图片为pdf还是image*/}
                     {
-                        currentFile.type === 'pdf' ?
+                        currentFile?.type === 'pdf' ?
                             <PdfViewer
                                 currentFile={currentFile}
                                 setOcrText={setOcrText}
@@ -164,11 +157,11 @@ const App: React.FC = () => {
                                 {...buttonsStatusEdit}
                             />
                             :
-                            currentFile.type === 'ofd' ?
+                            currentFile?.type === 'ofd' ?
                                 <OfdViewer currentFile={currentFile} {...buttonsStatusEdit}/>
                                 :
                             <ImageViewer
-                                key={currentFile.data}
+                                key={currentFile?.data}
                                 currentFile={currentFile}
                                 setOcrText={setOcrText}
                                 ocrText={ocrText}
