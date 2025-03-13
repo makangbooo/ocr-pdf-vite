@@ -1,3 +1,6 @@
+export const ImageTypes = ['png', 'jpg', 'jpeg']
+
+
 export interface CurrentFile {
 	name?: string;
 	type?: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;

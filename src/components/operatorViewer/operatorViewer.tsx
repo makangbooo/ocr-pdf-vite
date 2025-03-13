@@ -22,7 +22,7 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 	{
 		// isOcrEnabled,
 		// isFullOcrEnabled,
-		currentFile,
+		// currentFile,
 		fullText,
 		currentFileMeta,
 		// ocrText,

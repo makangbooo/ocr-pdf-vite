@@ -12,6 +12,7 @@ import {
 
 import {API_URLS} from "../../api/api.ts";
 import { CurrentFile } from "../entityTypes.ts";
+import FileTypeConverter from "./fileTypeConverter.tsx";
 
 interface FileItem {
 	name: string;
@@ -88,8 +89,6 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 setDirHandle,
 		 setInternalFileTree,
 
-		 resetIsBatchOperation,
-		 isBatchOperation,
 		 setIsOcrEnabled,
 		 isOcrEnabled,
 		 setIsTemplateEnabled,
@@ -104,6 +103,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 templateOcrLoading,
 		 // setTemplateOcrLoading,
 	}) => {
+
+	const [fileTypeConvertModal, setFileTypeConvertModal] = React.useState<boolean>(false);
 
 	// 文件选择（）
 	const handleFolderSelect = async () => {
@@ -246,11 +247,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							<Button type="primary" size="small" icon={<FileAddOutlined />}>公文模版定制</Button>
 					</Col>
 					<Col span={3}>
-						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={() => {
-							resetIsBatchOperation(!isBatchOperation)
-							setSelectedPaths([])
-						}}>
-							批量处理
+						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={()=>setFileTypeConvertModal(true)}>
+							批量转换
 						</Button>
 					</Col>
 				</Row>
@@ -278,6 +276,11 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 				</Col>
 			</Row>
 			</div>
+
+			<FileTypeConverter
+				fileTypeConvertModal={fileTypeConvertModal}
+				setFileTypeConvertModal={setFileTypeConvertModal}
+			/>
 		</div>
 
 

@@ -361,7 +361,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 								}
 							}
 							style={{marginBottom: 16}}>
-						批量处理
+						图片批量选择
 					</Button>
 					<Menu
 						mode="inline"
