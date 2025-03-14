@@ -168,7 +168,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							size="small"
 							icon={<SignatureOutlined />}
 							danger={isOcrEnabled}
-							// disabled={isTemplateEnabled||isFullOcrEnabled||currentFile.type!=="image"}
+							disabled={!currentFile || !['pdf' , 'image' , 'ofd'].includes(currentFile!.type)}
 							onClick={() => setIsOcrEnabled(!isOcrEnabled)}>
 							{isOcrEnabled ? "关闭画框识别" : "画框识别"}
 						</Button>

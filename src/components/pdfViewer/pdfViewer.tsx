@@ -13,6 +13,7 @@ import html2canvas from "html2canvas";
 import {API_URLS} from "../../api/api.ts";
 import axios from "axios";
 import {Popover} from "antd";
+import { getBase64FromBlobUrl} from "../../utils/fileTypeIdentify.tsx";
 
 
 interface pdfViewerProps {
@@ -22,36 +23,6 @@ interface pdfViewerProps {
 	ocrText: string;
 }
 
-
-// 使用 FileReader 将 blob URL 转换为 Base64
-const getBase64FromBlob = (imageUrl: string): Promise<string> => {
-	return new Promise(async (resolve, reject) => {
-		try {
-			// 通过 fetch 获取 Blob
-			const response = await fetch(imageUrl);
-			if (!response.ok) {
-				throw new Error('Failed to fetch blob from URL');
-			}
-			const blob = await response.blob();
-
-			const reader = new FileReader();
-
-			reader.onload = () => {
-				const base64String = reader.result as string; // 完整的 Data URL
-				const base64Only = base64String.split(',')[1]; // 只取 Base64 部分
-				resolve(base64Only); // 返回纯 Base64 字符串
-			};
-
-			reader.onerror = (error) => {
-				reject(error); // 读取失败时返回错误
-			};
-
-			reader.readAsDataURL(blob); // 读取 Blob 为 Data URL
-		} catch (error) {
-			reject(error); // fetch 或其他错误
-		}
-	});
-};
 const PdfViewer: React.FC<pdfViewerProps> = ({currentFile,isOcrEnabled, setOcrText,ocrText}) => {
 
 	const containerRef = useRef<HTMLDivElement>(null);
@@ -119,7 +90,7 @@ const PdfViewer: React.FC<pdfViewerProps> = ({currentFile,isOcrEnabled, setOcrTe
 			});
 			const imgData = canvas.toDataURL("image/png");
 			// const blob = await (await fetch(imgData)).blob();
-			const requestData = await getBase64FromBlob(imgData)
+			const requestData = await getBase64FromBlobUrl(imgData)
 
 			// 目标 API URL
 			const url = API_URLS.IMAGE_BASE64_OCR;

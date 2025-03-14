@@ -1,4 +1,4 @@
-import React from "react";
+import React  from "react";
 import { Col, Form, Input, Modal, Row, Select } from "antd";
 
 interface FileTypeConverter{
@@ -7,10 +7,11 @@ interface FileTypeConverter{
 }
 
 const FileTypeConverter: React.FC<FileTypeConverter> = ({fileTypeConvertModal,setFileTypeConvertModal}) => {
-	// const formRef = React.createRef<FormInstance>();
-	// const [inputFileTree, setInputFileTree] = useState<FileItem[]>(); // 输入文件树
-	// const [outputFilePath, setOutputPath] = useState<string>(); // 输出路径
+
 	const [form] = Form.useForm();
+	// const [inputFileTree, setInputFileTree] = useState<FileItem[]>(); // 输入文件树
+	// const [inputFileTree, setInputFileTree] = useState<string>(); // 输出路径
+	// const [outputFilePath, setOutputPath] = useState<string>(); // 输出路径
 
 
 	const inputType = [
@@ -21,12 +22,10 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({fileTypeConvertModal,se
 		{
 			label: 'PDF',
 			value: 'PDF',
-
 		},
 		{
 			label: 'OFD',
 			value: 'OFD',
-
 		},
 	]
 	const outputType = [
@@ -45,35 +44,57 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({fileTypeConvertModal,se
 	]
 
 // 处理输入路径选择
-	const onInputPathSelect = async () => {
+	const onInputPathSelect = async ()=>{
+		// console.log('开始选择文件夹');
+		// const path = await window.electronAPI.openFolder();
+		// if (path) {
+		// 	setInputFileTree(path); // 更新状态，显示文件夹路径
+		// } else {
+		// 	console.log('用户取消了选择');
+		// }
+		// console.log('结束选择文件夹');
+
+
+
+
+
+		// async () => {
 		// try {
 		// 	// 使用 showOpenFilePicker API 选择文件或文件夹
 		// 	// @ts-expect-error showOpenFilePicker不支持老版本的浏览器，且只支持https以及localhost请求
-		// 	const fileHandles = await window.showOpenFilePicker({
-		// 		multiple: true,
-		// 		types: inputType.map(type => ({
-		// 			description: type.label,
-		// 			accept: {
-		// 				[type.value === 'image' ? 'image/*' : `application/${type.value}`]:
-		// 					type.value === 'image' ? ['.png', '.jpg', '.jpeg'] : `.${type.value.toLowerCase()}`
-		// 			}
-		// 		}))
-		// 	});
+		// 	// const fileHandles = await window.showOpenFilePicker({
+		// 	// 	multiple: true,
+		// 	// 	types: inputType.map(type => ({
+		// 	// 		description: type.label,
+		// 	// 		accept: {
+		// 	// 			[type.value === 'image' ? 'image/*' : `application/${type.value}`]:
+		// 	// 				type.value === 'image' ? ['.png', '.jpg', '.jpeg'] : `.${type.value.toLowerCase()}`
+		// 	// 		}
+		// 	// 	}))
+		// 	// });
 		//
-		// 	const fileItems: FileItem[] = await Promise.all(
-		// 		fileHandles.map(async (handle: any) => {
-		// 			const file = await handle.getFile();
-		// 			return {
-		// 				name: file.name,
-		// 				type: 'file' as const,
-		// 				path: file.path || file.name,
-		// 				file: file
-		// 			};
-		// 		})
-		// 	);
+		// 	const fileHandles = await window.showOpenFilePicker()
 		//
-		// 	setInputFileTree(fileItems);
-		// 	form.setFieldsValue({ InputPath: fileItems.map(item => item.path).join(', ') });
+		// 	console.log("fileHandles", fileHandles);
+		//
+		//
+		//
+		//
+		//
+		// 	// const fileItems: FileItem[] = await Promise.all(
+		// 	// 	fileHandles.map(async (handle: any) => {
+		// 	// 		const file = await handle.getFile();
+		// 	// 		return {
+		// 	// 			name: file.name,
+		// 	// 			type: 'file' as const,
+		// 	// 			path: file.path || file.name,
+		// 	// 			file: file
+		// 	// 		};
+		// 	// 	})
+		// 	// );
+		// 	//
+		// 	// setInputFileTree(fileItems);
+		// 	// form.setFieldsValue({ InputPath: fileItems.map(item => item.path).join(', ') });
 		// } catch (error) {
 		// 	console.log('取消选择或发生错误:', error);
 		// }

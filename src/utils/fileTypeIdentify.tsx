@@ -5,12 +5,15 @@ import {CurrentFile, FileItem} from "../components/entityTypes.ts";
  * 		input：文件名
  * 		output：pdf 或 image 或 ofd 或 undefined
  */
-export const getFileType = (fileName: string): 'pdf' | 'image' | 'ofd' | undefined => {
+export const getFileType = (fileName: string): 'pdf' | 'image' | 'ofd' | 'other' => {
 	const extension = fileName.split('.').pop()?.toLowerCase();
 	if (extension === 'pdf') return 'pdf';
 	if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '')) return 'image';
 	if (extension === 'ofd') return 'ofd';
-	return undefined;
+	return 'other';
+
+
+
 }
 
 // 使用 FileReader 将 blob URL 转换为 Base64

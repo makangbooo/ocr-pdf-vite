@@ -14,7 +14,7 @@ export interface FileItem {
 // 当前文件
 export interface CurrentFile {
 	name: string;
-	type: 'folder' | 'pdf' | 'image' | 'ofd' | undefined;
+	type: 'folder' | 'pdf' | 'image' | 'ofd' | 'other';
 	file: File;
 	data: string; // 主要存储base64数据
 }

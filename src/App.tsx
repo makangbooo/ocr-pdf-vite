@@ -6,6 +6,7 @@ import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
 import {CurrentFile, DocumentMeta, FileItem} from "./components/entityTypes.ts";
 import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
+import {Flex, Typography} from "antd";
 
 
 const App: React.FC = () => {
@@ -14,8 +15,6 @@ const App: React.FC = () => {
     const [currentFile, setCurrentFile] = useState<CurrentFile>(); // 所选择的当前文件
     const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle>(); // 文件夹句柄（eg: /Users/username/Documents）
     const [internalFileTree, setInternalFileTree] = useState<FileItem[]>([]); // 文件树
-
-    //todo 将{name: string, data: File}替换为FileItem 其中file不为空
     const [selectedPaths, setSelectedPaths] = useState<FileItem[]>([]);// 批量操作所选择的文件
 
     // 识别结果
@@ -135,9 +134,9 @@ const App: React.FC = () => {
                         transition: 'width 0.3s ease', // 宽度变化动画
                     }}
                 >
-                    {/* 伪元素模拟纸张边缘 */}
                     <div
                         style={{
+                            // 伪元素模拟纸张边缘
                             position: 'absolute',
                             top: 0,
                             left: 0,
@@ -147,7 +146,7 @@ const App: React.FC = () => {
                             pointerEvents: 'none', // 不干扰交互
                         }}
                     />
-                    {/*todo 这里判断所选图片为pdf还是image*/}
+                    {/*todo 冗长可优化*/}
                     {
                         currentFile?.type === 'pdf' ?
                             <PdfViewer
@@ -160,15 +159,20 @@ const App: React.FC = () => {
                             currentFile?.type === 'ofd' ?
                                 <OfdViewer currentFile={currentFile} {...buttonsStatusEdit}/>
                                 :
-                            <ImageViewer
-                                key={currentFile?.data}
-                                currentFile={currentFile}
-                                setOcrText={setOcrText}
-                                ocrText={ocrText}
-                                setCurrentFileMeta={setCurrentFileMeta}
-                                currentFileMeta={currentFileMeta}
-                                {...buttonsStatusEdit}
-                            />
+                                currentFile?.type === 'image' ?
+                                    <ImageViewer
+                                        key={currentFile?.data}
+                                        currentFile={currentFile}
+                                        setOcrText={setOcrText}
+                                        ocrText={ocrText}
+                                        setCurrentFileMeta={setCurrentFileMeta}
+                                        currentFileMeta={currentFileMeta}
+                                        {...buttonsStatusEdit}
+                                    />
+                                    :
+                                    <Flex justify="center" align="center" style={{ height: '100%', width: "100%" }}>
+                                        <Typography.Title type="secondary" level={5}>暂不支持该文件类型</Typography.Title>
+                                    </Flex>
                     }
 
                 </div>
