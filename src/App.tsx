@@ -7,6 +7,7 @@ import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
 import {CurrentFile, DocumentMeta, FileItem} from "./components/entityTypes.ts";
 import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
 import {Flex, Typography} from "antd";
+import '@ant-design/v5-patch-for-react-19';
 
 
 const App: React.FC = () => {

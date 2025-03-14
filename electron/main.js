@@ -1,49 +1,45 @@
-const { app, BrowserWindow, dialog, ipcMain } = require('electron');
-const path = require('path');
+const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const path = require("path");
+
+let mainWindow; // 定义全局主窗口变量
 
 function createWindow() {
-  const win = new BrowserWindow({
+  mainWindow = new BrowserWindow({
     width: 1200,
     height: 900,
     webPreferences: {
-      nodeIntegration: true,
-      contextIsolation: false,
+      nodeIntegration: false, // 建议设置为 false 以提高安全性
+      contextIsolation: true, // 建议设置为 true
+      preload: path.join(__dirname, "preload.js"),
     },
   });
 
-  const isDev = process.env.NODE_ENV === 'development';
-  console.log('NODE_ENV:', process.env.NODE_ENV, 'isDev:', isDev); // 调试环境变量
+  const isDev = process.env.NODE_ENV === "development";
   if (isDev) {
-    win.loadURL('http://localhost:5173');
+    mainWindow.loadURL("http://localhost:5173");
   } else {
-    win.loadFile(path.join(__dirname, 'dist/index.html'));
+    mainWindow.loadFile(path.join(__dirname, "dist/index.html"));
   }
 
-  win.webContents.openDevTools(); // 打开开发者工具
+  mainWindow.webContents.openDevTools();
 }
 
-
 // 处理打开文件夹的 IPC 请求
-ipcMain.handle('open-folder', async () => {
+ipcMain.handle("open-folder", async () => {
   const result = await dialog.showOpenDialog(mainWindow, {
-    properties: ['openDirectory'], // 限制只能选择文件夹
+    properties: ["openDirectory"],
   });
 
-  if (!result.canceled) {
-    return result.filePaths[0]; // 返回选中的文件夹路径
-  } else {
-    return null; // 用户取消选择
-  }
+  return result.canceled ? null : result.filePaths[0];
 });
-
 
 app.whenReady().then(() => {
   createWindow();
-  app.on('activate', () => {
+  app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();
   });
 });
 
-app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+app.on("window-all-closed", () => {
+  if (process.platform !== "darwin") app.quit();
 });

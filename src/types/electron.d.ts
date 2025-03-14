@@ -1,4 +1,4 @@
-export interface ElectronAPI {
+interface ElectronAPI {
 	openFolder: () => Promise<string | null>;
 }
 
@@ -7,4 +7,3 @@ declare global {
 		electronAPI: ElectronAPI;
 	}
 }
-
