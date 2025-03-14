@@ -28,8 +28,8 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	// 处理输入路径选择
 	const onInputPathSelect = async () => {
 		try {
-			// 调用 Electron 的 openFolder 方法
-			const folderPath = await window.electronAPI.openFolder();
+			// 调用 Electron 的 selectFolder 方法
+			const folderPath = await (window as any).electronAPI.selectFolder();
 			console.log("folderPath", folderPath);
 			if (folderPath) {
 				setInputFolderPath(folderPath);
@@ -45,7 +45,7 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	// 处理输出路径选择
 	const onOutputPathSelect = async () => {
 		try {
-			const folderPath = await window.electronAPI.openFolder();
+			const folderPath = await (window as any).electronAPI.selectFolder();
 			if (folderPath) {
 				form.setFieldsValue({ Outpath: folderPath });
 			}

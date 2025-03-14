@@ -1,5 +1,6 @@
 interface ElectronAPI {
-	openFolder: () => Promise<string | null>;
+	selectFolder: () => Promise<string | null>;
+	readFile: (path:string) => Promise<string | null>;
 }
 
 declare global {

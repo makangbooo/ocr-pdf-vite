@@ -4,18 +4,19 @@ import ComponentHeader from './components/componentHeader/componentHeader.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
-import {CurrentFile, DocumentMeta, FileItem} from "./components/entityTypes.ts";
+import { DocumentMeta, FileItem} from "./components/entityTypes.ts";
 import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
 import {Flex, Typography} from "antd";
 import '@ant-design/v5-patch-for-react-19';
+import {CurrentFileNew, FileItemNew} from "./components/entityTypesNew.ts";
 
 
 const App: React.FC = () => {
 
     // 文件列表选择
-    const [currentFile, setCurrentFile] = useState<CurrentFile>(); // 所选择的当前文件
-    const [dirHandle, setDirHandle] = useState<FileSystemDirectoryHandle>(); // 文件夹句柄（eg: /Users/username/Documents）
-    const [internalFileTree, setInternalFileTree] = useState<FileItem[]>([]); // 文件树
+    const [currentFile, setCurrentFile] = useState<CurrentFileNew>(); // 所选择的当前文件
+    const [dirHandle, setDirHandle] = useState<string>(); // 文件夹句柄（eg: /Users/username/Documents）
+    const [internalFileTree, setInternalFileTree] = useState<FileItemNew[]>([]); // 文件树
     const [selectedPaths, setSelectedPaths] = useState<FileItem[]>([]);// 批量操作所选择的文件
 
     // 识别结果
@@ -35,7 +36,7 @@ const App: React.FC = () => {
     const [ocrLoading, setOcrLoading] = useState(false);
 
     console.log("currentFile", currentFile)
-    console.log("internalFileTree", internalFileTree)
+    // console.log("internalFileTree", internalFileTree)
 
     const buttonsStatusEdit = {
         // 按钮状态
@@ -162,7 +163,7 @@ const App: React.FC = () => {
                                 :
                                 currentFile?.type === 'image' ?
                                     <ImageViewer
-                                        key={currentFile?.data}
+                                        key={currentFile?.path}
                                         currentFile={currentFile}
                                         setOcrText={setOcrText}
                                         ocrText={ocrText}

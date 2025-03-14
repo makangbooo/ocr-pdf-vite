@@ -7,10 +7,10 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 
 
-import { CurrentFile } from "../entityTypes.ts";
 import axios from "axios";
+import {CurrentFileNew} from "../entityTypesNew.ts";
 
-const OfdViewer: React.FC<{ currentFile: CurrentFile;} > = ({currentFile}) => {
+const OfdViewer: React.FC<{ currentFile: CurrentFileNew;} > = ({currentFile}) => {
 
 	const [fileUrl, setFileUrl] = React.useState("");
 

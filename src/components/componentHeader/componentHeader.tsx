@@ -11,20 +11,21 @@ import {
 } from "@ant-design/icons";
 
 import {API_URLS} from "../../api/api.ts";
-import {CurrentFile, FileItem} from "../entityTypes.ts";
+import { FileItem } from "../entityTypes.ts";
 import FileTypeConverter from "./fileTypeConverter.tsx";
-import {buildFileTree, getBase64FromBlob} from "../../utils/fileTypeIdentify.tsx";
+import {getBase64FromBlob} from "../../utils/fileTypeIdentify.tsx";
+import {CurrentFileNew, FileItemNew} from "../entityTypesNew.ts";
 
 
 interface ComponentHeaderInterface {
 	// 导入文件按钮
 	setSelectedPaths: (paths: FileItem[] | []) => void;
 	resetIsBatchOperation:( isBatchOperation: boolean) => void;
-	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
-	dirHandle?: FileSystemDirectoryHandle | null;
-	setInternalFileTree: (fileTree: FileItem[]) => void;
+	setDirHandle: (dirHandle: string) => void;
+	dirHandle?: string | null;
+	setInternalFileTree: (fileTree: FileItemNew[]) => void;
 
-	currentFile?: CurrentFile;
+	currentFile?: CurrentFileNew;
 
 	// 画框识别
 	isOcrEnabled: boolean;
@@ -72,19 +73,17 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 	const [fileTypeConvertModal, setFileTypeConvertModal] = React.useState<boolean>(false);
 
 	// 文件选择，构建文件树赋值给internalFileTree
-	const handleFolderSelect = async () => {
-		try {
-			// @ts-expect-error window.showDirectoryPicker() 对旧版本浏览器不支持，且只支持https和localhost
-			const dirHandle = await window.showDirectoryPicker();
-			setDirHandle(dirHandle);
-			const newTree = await buildFileTree(dirHandle);
-			setInternalFileTree(newTree);
-			// 清空已选择文件
-			setSelectedPaths([]);
-		} catch (error) {
-			console.error('Error syncing directory:', error);
-		}
-	};
+		const handleFolderSelect = async () => {
+			try {
+				const result: FileItemNew = await (window as any).electronAPI.selectFolder();
+				if (!result) return;
+				setDirHandle(result.path);
+				setInternalFileTree(result.children?result.children:[]);
+				setSelectedPaths([]);
+			} catch (error) {
+				console.error('Error selecting directory:', error);
+			}
+		};
 
 	// 全文识别按钮
 	const onFullTextOcr = async () => {
