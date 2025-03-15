@@ -2,7 +2,7 @@ import React, { useEffect } from 'react';
 import {Menu, Checkbox, Button, Dropdown} from 'antd';
 import {FolderOutlined, FileImageOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
 import type { MenuProps } from 'antd';
-import {findItemByPath, getBase64FromBlob, getFileType} from "../../utils/fileTypeIdentify.tsx";
+import {findItemByPath, getFileType} from "../../utils/fileTypeIdentify.tsx";
 import {CurrentFile, FileItem} from "../entityTypes.ts";
 import UploadButton from "../uploadButton.tsx";
 import axios from "axios";
@@ -168,7 +168,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 					file: file.file,
 				};
 
-				const base64Data = await getBase64FromBlob(currentFile);
+				const base64Data = currentFile.data.split(',')[1]
 				return {
 					name: currentFile.name,
 					file: base64Data,
@@ -223,7 +223,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 					file: file.file,
 				};
 
-				const base64Data = await getBase64FromBlob(currentFile);
+				const base64Data = currentFile.data.split(',')[1]
 				return {
 					name: currentFile.name,
 					file: base64Data,

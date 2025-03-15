@@ -1,6 +1,8 @@
 const { app, BrowserWindow, dialog, ipcMain } = require("electron");
 const path = require("path");
 const fs = require("fs");
+const https = require("https");// 用于下载 HTTPS 文件
+const http = require("http");// 用于下载 HTTPS 文件
 
 let mainWindow; // 定义全局主窗口变量
 
@@ -50,7 +52,7 @@ function getFilesRecursive(folderPath) {
 
   return files;
 }
-// 处理文件夹选择请求
+// 用户导入文件
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory']
@@ -68,6 +70,20 @@ ipcMain.handle('select-folder', async () => {
   return { name, path, children, isDirectory };
 });
 
+// 用户将文件夹与本地同步，根据导入路径
+ipcMain.handle("sync-folder", async (_, folderPath) => {
+  if (!folderPath) return null;
+
+  try {
+    const children = getFilesRecursive(folderPath);
+    return {success: true, name:folderPath, path: folderPath, children, isDirectory:true };
+  } catch (error) {
+    console.error("❌ 文件夹同步失败:", error);
+    return null;
+  }
+});
+
+// 根据路径去获取文件信息（如base64信息）
 ipcMain.handle("read-file", async (_, filePath) => {
   try {
     // 读取文件内容（Buffer）
@@ -94,7 +110,41 @@ ipcMain.handle("read-file", async (_, filePath) => {
   }
 });
 
+// 处理下载请求
+ipcMain.handle("download-file", async (_, url, defaultFileName) => {
+  try {
+    // 让用户选择下载路径
+    const { filePath } = await dialog.showSaveDialog({
+      title: "选择下载位置",
+      defaultPath: path.join(require("os").homedir(), "Downloads", defaultFileName),
+      buttonLabel: "保存",
+      filters: [{ name: "All Files", extensions: ["*"] }],
+    });
 
+    // 如果用户取消了选择，返回 null
+    if (!filePath) {
+      return { success: false, error: "用户取消下载" };
+    }
+
+    return new Promise((resolve, reject) => {
+      const file = fs.createWriteStream(filePath);
+      const client = url.startsWith("https") ? https : http;
+
+      client.get(url, (response) => {
+        response.pipe(file);
+        file.on("finish", () => {
+          file.close();
+          resolve({ success: true, filePath });
+        });
+      }).on("error", (err) => {
+        fs.unlink(filePath, () => {}); // 删除未完成的文件
+        reject({ success: false, error: err.message });
+      });
+    });
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
 
 
 

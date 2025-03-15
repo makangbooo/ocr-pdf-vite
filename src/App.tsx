@@ -4,7 +4,7 @@ import ComponentHeader from './components/componentHeader/componentHeader.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
-import { DocumentMeta, FileItem} from "./components/entityTypes.ts";
+import { DocumentMeta } from "./components/entityTypes.ts";
 import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
 import {Flex, Typography} from "antd";
 import '@ant-design/v5-patch-for-react-19';
@@ -17,7 +17,7 @@ const App: React.FC = () => {
     const [currentFile, setCurrentFile] = useState<CurrentFileNew>(); // 所选择的当前文件
     const [dirHandle, setDirHandle] = useState<string>(); // 文件夹句柄（eg: /Users/username/Documents）
     const [internalFileTree, setInternalFileTree] = useState<FileItemNew[]>([]); // 文件树
-    const [selectedPaths, setSelectedPaths] = useState<FileItem[]>([]);// 批量操作所选择的文件
+    const [selectedPaths, setSelectedPaths] = useState<FileItemNew[]>([]);// 批量操作所选择的文件
 
     // 识别结果
     const [ocrText, setOcrText] = useState(""); // 单张图片ocr识别结果

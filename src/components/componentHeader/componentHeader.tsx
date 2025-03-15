@@ -11,15 +11,13 @@ import {
 } from "@ant-design/icons";
 
 import {API_URLS} from "../../api/api.ts";
-import { FileItem } from "../entityTypes.ts";
 import FileTypeConverter from "./fileTypeConverter.tsx";
-import {getBase64FromBlob} from "../../utils/fileTypeIdentify.tsx";
 import {CurrentFileNew, FileItemNew} from "../entityTypesNew.ts";
 
 
 interface ComponentHeaderInterface {
 	// 导入文件按钮
-	setSelectedPaths: (paths: FileItem[] | []) => void;
+	setSelectedPaths: (paths: FileItemNew[] | []) => void;
 	resetIsBatchOperation:( isBatchOperation: boolean) => void;
 	setDirHandle: (dirHandle: string) => void;
 	dirHandle?: string | null;
@@ -99,7 +97,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		try {
 
 			// 将图片转换为 Base64
-			const base64Data = await getBase64FromBlob(currentFile);
+			const base64Data = currentFile.data.split(',')[1]
 			// 目标 API URL
 			const url = API_URLS.IMAGE_BASE64_OCR;
 
