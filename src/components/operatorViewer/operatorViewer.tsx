@@ -5,7 +5,7 @@ import {Button, Card, Col, DatePicker, Flex, Form, FormInstance, Input, List, Ro
 const LItem = List.Item;
 const FItem = Form.Item;
 
-import {CurrentFile, DocumentMeta} from "../entityTypes.ts";
+import {CurrentFile, DocumentMeta} from "../../types/entityTypes.ts";
 import TextArea from "antd/es/input/TextArea";
 
 interface OperatorViewerProps {

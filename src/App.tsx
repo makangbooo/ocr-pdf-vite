@@ -4,11 +4,11 @@ import ComponentHeader from './components/componentHeader/componentHeader.tsx';
 import ImageViewer from './components/imageViewer/imageViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
 import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
-import { DocumentMeta } from "./components/entityTypes.ts";
+import { DocumentMeta } from "./types/entityTypes.ts";
 import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
 import {Flex, Typography} from "antd";
 import '@ant-design/v5-patch-for-react-19';
-import {CurrentFileNew, FileItemNew} from "./components/entityTypesNew.ts";
+import {CurrentFileNew, FileItemNew} from "./types/entityTypesNew.ts";
 
 
 const App: React.FC = () => {
@@ -35,8 +35,7 @@ const App: React.FC = () => {
     const [templateOcrLoading, setTemplateOcrLoading] = useState(false);
     const [ocrLoading, setOcrLoading] = useState(false);
 
-    console.log("currentFile", currentFile)
-    // console.log("internalFileTree", internalFileTree)
+    // console.log("currentFile", currentFile)
 
     const buttonsStatusEdit = {
         // 按钮状态

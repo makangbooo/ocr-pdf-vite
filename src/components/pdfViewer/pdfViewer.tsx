@@ -8,7 +8,7 @@ import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 
 
-import { CurrentFile } from "../entityTypes.ts";
+import { CurrentFile } from "../../types/entityTypes.ts";
 import html2canvas from "html2canvas";
 import {API_URLS} from "../../api/api.ts";
 import axios from "axios";

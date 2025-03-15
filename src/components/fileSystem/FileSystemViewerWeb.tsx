@@ -3,7 +3,7 @@ import {Menu, Checkbox, Button, Dropdown} from 'antd';
 import {FolderOutlined, FileImageOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
 import type { MenuProps } from 'antd';
 import {findItemByPath, getFileType} from "../../utils/fileTypeIdentify.tsx";
-import {CurrentFile, FileItem} from "../entityTypes.ts";
+import {CurrentFile, FileItem} from "../../types/entityTypes.ts";
 import UploadButton from "../uploadButton.tsx";
 import axios from "axios";
 
