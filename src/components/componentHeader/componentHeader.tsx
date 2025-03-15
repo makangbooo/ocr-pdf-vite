@@ -12,40 +12,11 @@ import {
 
 import {API_URLS} from "../../api/api.ts";
 import FileTypeConverter from "./fileTypeConverter.tsx";
-import {CurrentFileNew, FileItemNew} from "../entityTypesNew.ts";
+import { FileItemNew } from "../../types/entityTypesNew.ts";
+import {ComponentHeaderInterface} from "./type.ts";
 
 
-interface ComponentHeaderInterface {
-	// 导入文件按钮
-	setSelectedPaths: (paths: FileItemNew[] | []) => void;
-	resetIsBatchOperation:( isBatchOperation: boolean) => void;
-	setDirHandle: (dirHandle: string) => void;
-	dirHandle?: string | null;
-	setInternalFileTree: (fileTree: FileItemNew[]) => void;
 
-	currentFile?: CurrentFileNew;
-
-	// 画框识别
-	isOcrEnabled: boolean;
-	setIsOcrEnabled: ( isOcrEnabled: boolean) => void;
-
-	// 全文识别
-	setFullText: (text: string) => void;
-	setIsFullOcrEnabled:( isFullOcrEnabled: boolean) => void;
-	isFullOcrEnabled: boolean;
-
-	// 模版模式
-	isTemplateEnabled: boolean;
-	setIsTemplateEnabled: ( isOcrEnabled: boolean) => void;
-
-	// 批量操作
-	isBatchOperation: boolean;
-
-	setTemplateOcrLoading: (isTemplateOcrLoading: boolean) => void;
-	templateOcrLoading: boolean;
-	fullOcrLoading:boolean;
-	setFullOcrLoading: (isFullOcrLoading: boolean) => void;
-}
 
 const ComponentHeader: React.FC<ComponentHeaderInterface> =
 	({
@@ -93,14 +64,12 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		setFullText("");
 		setFullOcrLoading(true);
 		setIsFullOcrEnabled(true);
-		// todo 将imageUrl传入后端，http://1.95.55.32:1224/api/ocr
 		try {
 
-			// 将图片转换为 Base64
+			// 去除 Base64 数据的前缀
 			const base64Data = currentFile.data.split(',')[1]
 			// 目标 API URL
 			const url = API_URLS.IMAGE_BASE64_OCR;
-
 			// 构造请求数据
 			const data = {
 				base64: base64Data, // Base64 编码的图片数据
@@ -113,7 +82,6 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 			const response = await axios.post(url, data);
 			const text = response.data.data;
 			setFullText(text)
-			console.log("转换后",text)
 			setFullOcrLoading(false);
 			setIsFullOcrEnabled(false);
 			return response.data;

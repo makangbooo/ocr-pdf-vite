@@ -8,7 +8,7 @@ import { defaultLayoutPlugin } from '@react-pdf-viewer/default-layout';
 
 
 import axios from "axios";
-import {CurrentFileNew} from "../entityTypesNew.ts";
+import {CurrentFileNew} from "../../types/entityTypesNew.ts";
 
 const OfdViewer: React.FC<{ currentFile: CurrentFileNew;} > = ({currentFile}) => {
 

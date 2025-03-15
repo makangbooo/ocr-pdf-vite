@@ -11,6 +11,8 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 															setFileTypeConvertModal
 														}) => {
 	const [form] = Form.useForm();
+	const [inputTypeValue, setInputTypeValue] = useState<string|undefined>(undefined); // 存储选中的文件夹路径
+	const [outputTypeValue, setOutputTypeValue] = useState<string|undefined>(undefined); // 存储选中的文件夹路径
 	const [inputFolderPath, setInputFolderPath] = useState<string>(""); // 存储选中的文件夹路径
 
 	const inputType = [
@@ -29,7 +31,9 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	const onInputPathSelect = async () => {
 		try {
 			// 调用 Electron 的 selectFolder 方法
-			const folderPath = await (window as any).electronAPI.selectFolder();
+			const selectFolder = await (window as any).electronAPI.selectFolder();
+			console.log("selectFolder", selectFolder);
+			const folderPath = selectFolder.path;
 			console.log("folderPath", folderPath);
 			if (folderPath) {
 				setInputFolderPath(folderPath);
@@ -94,7 +98,7 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 							hasFeedback
 							rules={[{ required: true, message: "请选择输入格式" }]}
 						>
-							<Select placeholder="请选择输入格式" options={inputType} />
+							<Select placeholder="请选择输入格式" options={inputType} onChange={value => setInputTypeValue(value)}/>
 						</Form.Item>
 					</Col>
 					<Col span={12}>
@@ -117,38 +121,42 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 								},
 							]}
 						>
-							<Select placeholder="请选择输出格式" options={outputType} />
+							<Select placeholder="请选择输出格式" options={outputType} onChange={value => setOutputTypeValue(value)}/>
 						</Form.Item>
 					</Col>
-					<Col span={12}>
-						<Form.Item
-							label="输入路径"
-							name="InputPath"
-							hasFeedback
-							rules={[{ required: true, message: "请选择输入路径" }]}
-						>
-							<Input
-								placeholder="点击选择输入路径"
-								readOnly
-								onClick={onInputPathSelect}
-								value={inputFolderPath}
-							/>
-						</Form.Item>
-					</Col>
-					<Col span={12}>
-						<Form.Item
-							label="输出路径"
-							name="Outpath"
-							hasFeedback
-							rules={[{ required: true, message: "请选择输出路径" }]}
-						>
-							<Input
-								placeholder="点击选择输出路径"
-								readOnly
-								onClick={onOutputPathSelect}
-							/>
-						</Form.Item>
-					</Col>
+					{inputTypeValue &&
+						<Col span={12}>
+							<Form.Item
+								label="输入路径"
+								name="InputPath"
+								hasFeedback
+								rules={[{ required: true, message: "请选择输入路径" }]}
+							>
+								<Input
+									placeholder="点击选择输入路径"
+									readOnly
+									onClick={onInputPathSelect}
+									value={inputFolderPath}
+								/>
+							</Form.Item>
+						</Col>
+					}
+					{outputTypeValue &&
+						<Col span={12}>
+							<Form.Item
+								label="输出路径"
+								name="Outpath"
+								hasFeedback
+								rules={[{ required: true, message: "请选择输出路径" }]}
+							>
+								<Input
+									placeholder="点击选择输出路径"
+									readOnly
+									onClick={onOutputPathSelect}
+								/>
+							</Form.Item>
+						</Col>
+					}
 				</Row>
 			</Form>
 		</Modal>

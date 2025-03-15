@@ -1,5 +1,5 @@
-import {CurrentFile, FileItem} from "../components/entityTypes.ts";
-import {CurrentFileNew, FileItemNew} from "../components/entityTypesNew.ts";
+import {CurrentFile, FileItem} from "../types/entityTypes.ts";
+import {CurrentFileNew, FileItemNew} from "../types/entityTypesNew.ts";
 
 /**
  *  一个工具类，获取文件的后缀，根据后缀判断文件类型
@@ -78,7 +78,7 @@ export const getBase64FromBlobUrl = (imageUrl: string): Promise<string> => {
 	});
 };
 
- 
+
 // 传入文件文件夹句柄，读取文件夹并构建文件树
 export const buildFileTree = async (handle: FileSystemDirectoryHandle, path: string = ''): Promise<FileItem[]> => {
 	const items: FileItem[] = [];
@@ -110,7 +110,7 @@ export const findItemByPath = (items: FileItem[], path: string): FileItem | unde
 
 
 
-// 根据路径得出File和Base64属性的值
+// 根据绝对path得出File和Base64属性的值
 export const getBase64ByPath_Electron = async(file: FileItemNew): Promise<CurrentFileNew | undefined>  => {
 	try {
 		// 向主进程请求文件内容（Base64）
@@ -127,15 +127,15 @@ export const getBase64ByPath_Electron = async(file: FileItemNew): Promise<Curren
 			// 创建 File 对象
 			const newFile = new File([fileBlob], file.name, { type: response.mimeType });
 
-			const currentClick = {
+			const newFileItem = {
 				name: file.name,
 				type: fileType,
 				path: file.path,
 				file: newFile, // Base64 数据
 				data: response.base64,
 			};
-			console.log("文件读取成功:", currentClick);
-			return currentClick;
+			console.log("文件读取成功:", newFileItem);
+			return newFileItem;
 		} else {
 			console.error("文件读取失败:", response.error);
 			return undefined;

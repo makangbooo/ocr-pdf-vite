@@ -57,7 +57,6 @@ ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory']
   });
-  console.log("result11111",result);
 
   if (result.canceled) return null;
 

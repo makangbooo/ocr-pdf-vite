@@ -8,7 +8,7 @@ import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
 import {API_URLS} from "../../api/api.ts";
 
-import {CurrentFile, DocumentMeta} from "../entityTypes.ts";
+import {CurrentFile, DocumentMeta} from "../../types/entityTypes.ts";
 import { getBase64FromBlobUrl} from "../../utils/fileTypeIdentify.tsx";
 
 interface ImageViewerProps {
@@ -100,7 +100,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 				const base64Images = await Promise.all(
 					canvases.map(canvas => getBase64FromBlobUrl(canvas.toDataURL("image/png")))
 				);
-				console.log("base64Images", base64Images)
 
 				// 创建请求数据模板
 				const createRequestData = (base64: string) => ({
@@ -122,13 +121,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 					fileTitle: responses[2].data.data,
 					content: responses[3].data.data // 取消注释以启用第四个区域
 				};
-
-				console.log("OCR Results:", {
-					redHeader: fileMeta.redHeader,
-					fileNumber: fileMeta.fileNumber,
-					fileTitle: fileMeta.fileTitle,
-					content: fileMeta.content
-				});
 
 				setCurrentFileMeta(fileMeta);
 			} catch (error) {

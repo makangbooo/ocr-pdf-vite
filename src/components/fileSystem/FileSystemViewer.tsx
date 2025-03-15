@@ -2,10 +2,10 @@ import React, {useEffect} from 'react';
 import type {MenuProps} from 'antd';
 import {Button, Checkbox, Dropdown, Menu, message} from 'antd';
 import {FileImageOutlined, FolderOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
-import {getBase64ByPath_Electron} from "../../utils/fileTypeIdentify.tsx";
+import {getBase64ByPath_Electron, getFileType} from "../../utils/fileTypeIdentify.tsx";
 import UploadButton from "../uploadButton.tsx";
 import axios from "axios";
-import {CurrentFileNew, FileItemNew} from "../entityTypesNew.ts";
+import {CurrentFileNew, FileItemNew} from "../../types/entityTypesNew.ts";
 
 interface FileSystemViewerProps {
 	setCurrentFile: (url: CurrentFileNew) => void;
@@ -88,6 +88,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 								checked={selectedPaths?.some(p => p.name === item.name)}
 								onChange={e => handleCheckboxChange(item, item.isDirectory, e.target.checked)}
 								onClick={e => e.stopPropagation()}
+								disabled={getFileType(item.name)!=='image' }
 							/>
 						)}
 						<span style={{marginLeft: 8}}>{item.name}</span>
@@ -174,7 +175,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 	const convert2pdf = async (): Promise<void> => {
 		// 1. 输入验证
 		if (!selectedPaths?.length) {
-			console.error('No file selected.');
+			message.error('No file selected.')
 			return;
 		}
 
@@ -202,19 +203,17 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			try {
 				const downloadResult = await (window as any).electronAPI.downloadFile(downloadUrl, fileName);
 				if (downloadResult.success) {
-					console.log(`✅ 下载成功，文件路径: ${downloadResult.filePath}`);
-					alert(`下载成功！文件保存路径：${downloadResult.filePath}`);
+					message.success(`下载成功，文件路径: ${downloadResult.filePath}`);
 				} else {
-					console.error(`❌ 下载失败: ${downloadResult.error}`);
-					alert(`下载失败: ${downloadResult.error}`);
+					message.error(`下载失败: ${downloadResult.error}`);
 				}
 			} catch (error) {
-				console.error("IPC 调用失败:", error);
+				message.error(`IPC 调用失败: ${error}`);
 				return undefined;
 			}
 			return response.data; // 根据需要返回数据
 		} catch (error) {
-			console.error('PDF conversion failed:', error);
+			message.error(`PDF conversion failed: ${error}`);
 			throw error; // 或根据需求处理错误
 		}
 	};
@@ -223,7 +222,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 	const convert2ofd = async (): Promise<void> => {
 		// 1. 输入验证
 		if (!selectedPaths?.length) {
-			console.error('No file selected.');
+			message.error('No file selected.');
 			return;
 		}
 
@@ -253,19 +252,17 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			try {
 				const downloadResult = await (window as any).electronAPI.downloadFile(downloadUrl, fileName);
 				if (downloadResult.success) {
-					console.log(`✅ 下载成功，文件路径: ${downloadResult.filePath}`);
-					alert(`下载成功！文件保存路径：${downloadResult.filePath}`);
+					message.success(`下载成功，文件路径: ${downloadResult.filePath}`);
 				} else {
-					console.error(`❌ 下载失败: ${downloadResult.error}`);
-					alert(`下载失败: ${downloadResult.error}`);
+					message.error(`下载失败: ${downloadResult.error}`);
 				}
 			} catch (error) {
-				console.error("IPC 调用失败:", error);
+				message.error(`IPC 调用失败: ${error}`);
 				return undefined;
 			}
 			return response.data; // 根据需要返回数据
 		} catch (error) {
-			console.error('PDF conversion failed:', error);
+			message.error(`PDF conversion failed: ${error}`);
 			throw error; // 或根据需求处理错误
 		}
 	};
