@@ -11,7 +11,7 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [react()],
     server: {
-      port: 3000,
+      // port: 3000,
       host: '0.0.0.0', // 允许外部访问
       allowedHosts: [
         'www.makangbo.cn', // 允许的域名

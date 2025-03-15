@@ -1,16 +1,20 @@
 import {CurrentFile, FileItem} from "../components/entityTypes.ts";
+import {CurrentFileNew, FileItemNew} from "../components/entityTypesNew.ts";
 
 /**
  *  一个工具类，获取文件的后缀，根据后缀判断文件类型
  * 		input：文件名
  * 		output：pdf 或 image 或 ofd 或 undefined
  */
-export const getFileType = (fileName: string): 'pdf' | 'image' | 'ofd' | undefined => {
+export const getFileType = (fileName: string): 'pdf' | 'image' | 'ofd' | 'other' => {
 	const extension = fileName.split('.').pop()?.toLowerCase();
 	if (extension === 'pdf') return 'pdf';
 	if (['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp'].includes(extension || '')) return 'image';
 	if (extension === 'ofd') return 'ofd';
-	return undefined;
+	return 'other';
+
+
+
 }
 
 // 使用 FileReader 将 blob URL 转换为 Base64
@@ -74,7 +78,7 @@ export const getBase64FromBlobUrl = (imageUrl: string): Promise<string> => {
 	});
 };
 
-
+ 
 // 传入文件文件夹句柄，读取文件夹并构建文件树
 export const buildFileTree = async (handle: FileSystemDirectoryHandle, path: string = ''): Promise<FileItem[]> => {
 	const items: FileItem[] = [];
@@ -103,3 +107,41 @@ export const findItemByPath = (items: FileItem[], path: string): FileItem | unde
 	}
 	return undefined;
 };
+
+
+
+// 根据路径得出File和Base64属性的值
+export const getBase64ByPath_Electron = async(file: FileItemNew): Promise<CurrentFileNew | undefined>  => {
+	try {
+		// 向主进程请求文件内容（Base64）
+		// const response = await ipcRenderer.invoke("read-file", clickedItem.path);
+		const response = await (window as any).electronAPI.readFile(file.path);
+		if (response.success) {
+			const fileType = getFileType(file.name);
+			// 将 Base64 转换为 Blob
+			const byteCharacters = atob(response.base64.split(",")[1]);
+			const byteNumbers = new Array(byteCharacters.length).fill(null).map((_, i) => byteCharacters.charCodeAt(i));
+			const byteArray = new Uint8Array(byteNumbers);
+			const fileBlob = new Blob([byteArray], { type: response.mimeType });
+
+			// 创建 File 对象
+			const newFile = new File([fileBlob], file.name, { type: response.mimeType });
+
+			const currentClick = {
+				name: file.name,
+				type: fileType,
+				path: file.path,
+				file: newFile, // Base64 数据
+				data: response.base64,
+			};
+			console.log("文件读取成功:", currentClick);
+			return currentClick;
+		} else {
+			console.error("文件读取失败:", response.error);
+			return undefined;
+		}
+	} catch (error) {
+		console.error("IPC 调用失败:", error);
+		return undefined;
+	}
+}

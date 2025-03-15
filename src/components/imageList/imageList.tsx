@@ -33,7 +33,6 @@ const ImageListViewer: React.FC<ImageListProps> = ({ imageUrlList, showDrawer}) 
 						</>
 				))
 			}
-
 		</div>
 	);
 };

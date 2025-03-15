@@ -1,22 +1,23 @@
-import React, {useEffect} from 'react';
-import type {MenuProps} from 'antd';
-import {Button, Checkbox, Dropdown, Menu, message} from 'antd';
-import {FileImageOutlined, FolderOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
-import {getBase64ByPath_Electron} from "../../utils/fileTypeIdentify.tsx";
+import React, { useEffect } from 'react';
+import {Menu, Checkbox, Button, Dropdown} from 'antd';
+import {FolderOutlined, FileImageOutlined, SyncOutlined, UnorderedListOutlined} from '@ant-design/icons';
+import type { MenuProps } from 'antd';
+import {findItemByPath, getFileType} from "../../utils/fileTypeIdentify.tsx";
+import {CurrentFile, FileItem} from "../entityTypes.ts";
 import UploadButton from "../uploadButton.tsx";
 import axios from "axios";
-import {CurrentFileNew, FileItemNew} from "../entityTypesNew.ts";
+
 
 interface FileSystemViewerProps {
-	setCurrentFile: (url: CurrentFileNew) => void;
+	setCurrentFile: (url: CurrentFile) => void;
 	isBatchOperation: boolean;
-	selectedPaths: FileItemNew[] | undefined;
-	setSelectedPaths: (paths: FileItemNew[] | []) => void;
+	selectedPaths: FileItem[] | undefined;
+	setSelectedPaths: (paths: FileItem[] | []) => void;
 
-	setDirHandle: (dirHandle: string) => void;
-	dirHandle?: string | null; // dirHandle 用于存储文件夹句柄
-	internalFileTree: FileItemNew[];
-	setInternalFileTree: (fileTree: FileItemNew[]) => void;
+	setDirHandle: (fileSystemDirectoryHandle: FileSystemDirectoryHandle) => void;
+	dirHandle?: FileSystemDirectoryHandle | null; // dirHandle 用于存储文件夹句柄
+	internalFileTree: FileItem[];
+	setInternalFileTree: (fileTree: FileItem[]) => void;
 
 	setIsBatchOperation:( isBatchOperation: boolean) => void;
 }
@@ -28,6 +29,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 															   isBatchOperation,
 															   selectedPaths,
 															   setSelectedPaths,
+															   setDirHandle,
 															   dirHandle,
 															   internalFileTree,
 															   setInternalFileTree,
@@ -35,36 +37,24 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 														   }) => {
 
 
-	// todo 初始化或同步文件夹
+	// 初始化或同步文件夹
 	const syncDirectory = async () => {
-		if (!dirHandle) return
 		try {
-			 //所导入根文件夹路径
-			const response = await (window as any).electronAPI.syncFolder(dirHandle);
-
-			if (response.success) {
-				message.open({
-					type: 'success',
-					content: '文件同步成功',
-					duration: 1
-				});
-
-				setInternalFileTree(response.children?response.children:[]);
-				setSelectedPaths([]);
-			} else {
-				message.open({
-					type: 'error',
-					content: '文件同步失败',
-					duration: 1
-				});
-				return undefined;
+			let handle = dirHandle;
+			if (!handle) {
+				// 首次加载时选择文件夹
+				// @ts-expect-error 可能不存在
+				handle = await window.showDirectoryPicker();
+				// @ts-expect-error 可能不存在
+				setDirHandle(handle);
 			}
+			// @ts-expect-error 可能不存在
+			const newTree = await buildFileTree(handle);
+			setInternalFileTree(newTree);
+			// setSelectedPaths(new Set()); // 可选：清空已选择路径
+			setSelectedPaths([]);
 		} catch (error) {
-			message.open({
-				type: 'error',
-				content: '文件同步失败',
-				duration: 1
-			});
+			console.error('Error syncing directory:', error);
 		}
 	};
 
@@ -76,48 +66,47 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 	}, []);
 
 	// 将文件树转换为 Menu 所需的 items 格式
-	const getMenuItems = (items: FileItemNew[]): MenuItem[] => {
+	const getMenuItems = (items: FileItem[]): MenuItem[] => {
 		return items.map(item => (
 			{
 				key: item.path,
-				icon: item.isDirectory ? <FolderOutlined/> : <FileImageOutlined/>,
+				icon: item.type === 'folder' ? <FolderOutlined/> : <FileImageOutlined/>,
 				label: (
 					<div style={{display: 'flex', alignItems: 'center'}}>
 						{isBatchOperation && (
 							<Checkbox
 								checked={selectedPaths?.some(p => p.name === item.name)}
-								onChange={e => handleCheckboxChange(item, item.isDirectory, e.target.checked)}
+								onChange={e => handleCheckboxChange(item, item.type === 'folder', e.target.checked)}
 								onClick={e => e.stopPropagation()}
 							/>
 						)}
 						<span style={{marginLeft: 8}}>{item.name}</span>
 					</div>
 				),
-				children: item.isDirectory? item.children : undefined,
+				children: item.children ? getMenuItems(item.children) : undefined,
 			}));
 	};
 
 	// 处理菜单点击事件
-	const handleMenuClick: MenuProps['onClick'] = async(e) => {
+	const handleMenuClick: MenuProps['onClick'] = (e) => {
 		const clickedItem = findItemByPath(internalFileTree, e.key);
-		if (!clickedItem || clickedItem.isDirectory) return;
-
-		const currentFile = await getBase64ByPath_Electron(clickedItem)
-		if (currentFile === undefined) return undefined;
-		const currentClick = {
-			name: currentFile.name,
-			type: currentFile.type,
-			path: currentFile.path,
-			file: currentFile.file, // Base64 数据
-			data: currentFile.data,
-		};
-		setCurrentFile(currentClick);
+		if (clickedItem?.type === 'file' && clickedItem.file) {
+			const fileType = getFileType(clickedItem.name);
+			const currentClick = {
+				name: clickedItem.name,
+				type: fileType,
+				file: clickedItem.file,
+				data: URL.createObjectURL(clickedItem.file),
+			};
+			// 唯一定义currentFile
+			setCurrentFile(currentClick);
+		}
 	};
 
 	// 获取所有子文件路径
-	const getAllChildPaths = (item: FileItemNew): FileItemNew[] => {
-		const paths: FileItemNew[] = [];
-		if (!item.isDirectory) {
+	const getAllChildPaths = (item: FileItem): FileItem[] => {
+		const paths: FileItem[] = [];
+		if (item.type === 'file') {
 			paths.push(item);
 		} else if (item.children) {
 			item.children.forEach(child => {
@@ -128,7 +117,7 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 	};
 
 	// 处理选择框变化
-	const handleCheckboxChange = (file: FileItemNew, isFolder: boolean, checked: boolean) => {
+	const handleCheckboxChange = (file: FileItem, isFolder: boolean, checked: boolean) => {
 
 		const newSelected = selectedPaths ? [...selectedPaths] : []
 		const item = findItemByPath(internalFileTree, file.path);
@@ -157,18 +146,6 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 			setSelectedPaths([...newSelected]);
 		}
 	}
-	// 根据文件路径在文件树中遍历查找文件项
-	const findItemByPath = (items: FileItemNew[], path: string): FileItemNew | undefined => {
-		for (const item of items) {
-			if (item.path === path) return item;
-			if (item.children) {
-				const found = findItemByPath(item.children, path);
-				if (found) return found;
-			}
-		}
-		return undefined;
-	};
-
 
 	// 转化为双层pdf
 	const convert2pdf = async (): Promise<void> => {
@@ -179,14 +156,30 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 		}
 
 		try {
+			// 2. 使用Promise.all并提取转换逻辑
+			const convertFileToBase64 = async (file: FileItem): Promise<{ name: string; file: string }> => {
+
+				const currentFile: CurrentFile = {
+					name: file.name,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					data: URL.createObjectURL(file.file),
+					path: file.path,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					file: file.file,
+				};
+
+				const base64Data = currentFile.data.split(',')[1]
+				return {
+					name: currentFile.name,
+					file: base64Data,
+				};
+			};
+
+			// 3. 并行处理文件转换
 			const requestData = await Promise.all(
-				selectedPaths.map(async (file) => {
-					const currentFile = await getBase64ByPath_Electron(file)
-					if (currentFile === undefined) return undefined;
-					return {
-						name: currentFile.name,
-						file: currentFile.data,
-					}
+				selectedPaths.map((file) => {
+					console.log('Processing file:', file);
+					return convertFileToBase64(file);
 				})
 			);
 
@@ -196,22 +189,13 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 				requestData
 			);
 
+			console.log('Conversion successful:', response.data);
 			const downloadUrl = `${process.env.VITE_API_BASE_URL}/${response.data.name}`
-			const fileName = response.data.name; // 根据接口返回的文件名
-			// 下载
-			try {
-				const downloadResult = await (window as any).electronAPI.downloadFile(downloadUrl, fileName);
-				if (downloadResult.success) {
-					console.log(`✅ 下载成功，文件路径: ${downloadResult.filePath}`);
-					alert(`下载成功！文件保存路径：${downloadResult.filePath}`);
-				} else {
-					console.error(`❌ 下载失败: ${downloadResult.error}`);
-					alert(`下载失败: ${downloadResult.error}`);
-				}
-			} catch (error) {
-				console.error("IPC 调用失败:", error);
-				return undefined;
-			}
+			// 根据链接下载文件
+			// handleDownload(downloadUrl, response.data.name);
+			window.open(downloadUrl, "_blank");
+
+
 			return response.data; // 根据需要返回数据
 		} catch (error) {
 			console.error('PDF conversion failed:', error);
@@ -228,15 +212,29 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 		}
 
 		try {
+			// 2. 使用Promise.all并提取转换逻辑
+			const convertFileToBase64 = async (file: FileItem): Promise<{ name: string; file: string }> => {
+				const currentFile: CurrentFile = {
+					name: file.name,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					data: URL.createObjectURL(file.file),
+					path: file.path,
+					// @ts-expect-error 此时的file为文件而非文件夹，因此file不为空
+					file: file.file,
+				};
+
+				const base64Data = currentFile.data.split(',')[1]
+				return {
+					name: currentFile.name,
+					file: base64Data,
+				};
+			};
+
 			// 3. 并行处理文件转换
 			const requestData = await Promise.all(
-				selectedPaths.map(async (file) => {
-					const currentFile = await getBase64ByPath_Electron(file)
-					if (currentFile === undefined) return undefined;
-					return {
-						name: currentFile.name,
-						file: currentFile.data,
-					}
+				selectedPaths.map((file) => {
+					console.log('Processing file:', file);
+					return convertFileToBase64(file);
 				})
 			);
 
@@ -246,23 +244,10 @@ const FileSystemViewer: React.FC<FileSystemViewerProps> = ({
 				requestData
 			);
 			const downloadUrl = `${process.env.VITE_API_BASE_URL}/${response.data.name}`
-			const fileName = response.data.name; // 根据接口返回的文件名
-
-
-			// 下载
-			try {
-				const downloadResult = await (window as any).electronAPI.downloadFile(downloadUrl, fileName);
-				if (downloadResult.success) {
-					console.log(`✅ 下载成功，文件路径: ${downloadResult.filePath}`);
-					alert(`下载成功！文件保存路径：${downloadResult.filePath}`);
-				} else {
-					console.error(`❌ 下载失败: ${downloadResult.error}`);
-					alert(`下载失败: ${downloadResult.error}`);
-				}
-			} catch (error) {
-				console.error("IPC 调用失败:", error);
-				return undefined;
-			}
+			// 根据链接下载文件
+			// handleDownload(downloadUrl, response.data.name);
+			window.open(downloadUrl, "_blank");
+			console.log('Conversion successful:', response.data);
 			return response.data; // 根据需要返回数据
 		} catch (error) {
 			console.error('PDF conversion failed:', error);
