@@ -4,6 +4,7 @@ const fs = require("fs");
 const https = require("https");// 用于下载 HTTPS 文件
 const http = require("http");// 用于下载 HTTPS 文件
 const { download } = require('electron-dl')
+const { spawn } = require('node:child_process')
 
 let mainWindow; // 定义全局主窗口变量
 
@@ -136,9 +137,8 @@ ipcMain.handle("download-file", async (_, url, defaultFileName) => {
   }
 });
 
+// 提供下载链接和本地保存路径，直接下载文件
 ipcMain.handle('download-file-url-save', async (_,  downloadUrl, savePath ) => {
-  console.log('下载文件1111111downloadUrl1111111111--------:', downloadUrl)
-  console.log('下载文件22222222savePath222222222--------:', savePath)
   const win = BrowserWindow.getFocusedWindow()
 
   try {
@@ -156,6 +156,24 @@ ipcMain.handle('download-file-url-save', async (_,  downloadUrl, savePath ) => {
     console.error('文件下载失败:', error)
   }
 })
+
+// 仅作为windows打开exe文件
+// 处理扫描请求
+ipcMain.handle('start-scan', async () => {
+  try {
+    const naps2Path = path.join(__dirname, 'NAPS2', 'NAPS2.exe');
+    const scanProcess = spawn(naps2Path, [], {
+      detached: true,
+      stdio: 'ignore',
+    });
+    scanProcess.unref();
+    console.log(`NAPS2扫描程序已启动，路径: ${naps2Path}`);
+    return { success: true };
+  } catch (error) {
+    console.error('启动扫描程序时出错:', error);
+    return { success: false, error: error.message };
+  }
+});
 
 
 app.whenReady().then(() => {

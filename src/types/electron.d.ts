@@ -4,6 +4,9 @@ interface ElectronAPI {
 	readFile: (path:string) => Promise<string | null>;
 	downloadFile: (url, fileName) => Promise<string | null>;
 	downloadFileUrlSavePath: (downloadUrl, savePath) => Promise<string | null>;
+
+	startScan: () => Promise<string | null>;
+
 }
 
 declare global {
