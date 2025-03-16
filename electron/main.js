@@ -3,6 +3,7 @@ const path = require("path");
 const fs = require("fs");
 const https = require("https");// 用于下载 HTTPS 文件
 const http = require("http");// 用于下载 HTTPS 文件
+const { download } = require('electron-dl')
 
 let mainWindow; // 定义全局主窗口变量
 
@@ -27,16 +28,7 @@ function createWindow() {
   mainWindow.webContents.openDevTools();
 }
 
-// 处理打开文件夹的 IPC 请求
-// ipcMain.handle("open-folder", async () => {
-//   const result = await dialog.showOpenDialog(mainWindow, {
-//     properties: ["openDirectory"],
-//   });
-//
-//   return result.canceled ? null : result.filePaths[0];
-// });
-
-
+// 递归遍历路径下的所有文件
 function getFilesRecursive(folderPath) {
   const files = fs.readdirSync(folderPath).map(file => {
     const filePath = path.join(folderPath, file);
@@ -52,7 +44,8 @@ function getFilesRecursive(folderPath) {
 
   return files;
 }
-// 用户导入文件
+
+// 打开对话框，用户选择文件夹 导入
 ipcMain.handle('select-folder', async () => {
   const result = await dialog.showOpenDialog({
     properties: ['openDirectory']
@@ -69,10 +62,9 @@ ipcMain.handle('select-folder', async () => {
   return { name, path, children, isDirectory };
 });
 
-// 用户将文件夹与本地同步，根据导入路径
+// 根据导入路径，用户将文件夹与本地同步
 ipcMain.handle("sync-folder", async (_, folderPath) => {
   if (!folderPath) return null;
-
   try {
     const children = getFilesRecursive(folderPath);
     return {success: true, name:folderPath, path: folderPath, children, isDirectory:true };
@@ -101,7 +93,6 @@ ipcMain.handle("read-file", async (_, filePath) => {
 
     // 转换为 Base64
     const base64Data = `data:${mimeType};base64,${fileBuffer.toString("base64")}`;
-
     return { success: true, base64: base64Data, mimeType };
   } catch (error) {
     console.error("Error reading file:", error);
@@ -109,7 +100,7 @@ ipcMain.handle("read-file", async (_, filePath) => {
   }
 });
 
-// 处理下载请求
+// 处理下载请求(打开对话框，要求用户自主选择下载路径)
 ipcMain.handle("download-file", async (_, url, defaultFileName) => {
   try {
     // 让用户选择下载路径
@@ -145,6 +136,26 @@ ipcMain.handle("download-file", async (_, url, defaultFileName) => {
   }
 });
 
+ipcMain.handle('download-file-url-save', async (_,  downloadUrl, savePath ) => {
+  console.log('下载文件1111111downloadUrl1111111111--------:', downloadUrl)
+  console.log('下载文件22222222savePath222222222--------:', savePath)
+  const win = BrowserWindow.getFocusedWindow()
+
+  try {
+    // 确保目录存在
+    const fs = require('fs').promises
+    await fs.mkdir(path.dirname(savePath), { recursive: true })
+
+    // 执行下载
+    await download(win, downloadUrl, {
+      saveAs: false,
+      directory: path.dirname(savePath),
+      filename: path.basename(savePath)
+    })
+  } catch (error) {
+    console.error('文件下载失败:', error)
+  }
+})
 
 
 app.whenReady().then(() => {

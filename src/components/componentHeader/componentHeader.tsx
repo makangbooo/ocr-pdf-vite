@@ -15,9 +15,6 @@ import FileTypeConverter from "./fileTypeConverter.tsx";
 import { FileItemNew } from "../../types/entityTypesNew.ts";
 import {ComponentHeaderInterface} from "./type.ts";
 
-
-
-
 const ComponentHeader: React.FC<ComponentHeaderInterface> =
 	({
 		 setSelectedPaths,
@@ -99,7 +96,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 			<div style={{ maxHeight:"6vh",  background: '#f5f7fa',overflow: "auto" }}>
 				<Row  justify="center" align="middle" style={{ flex: 1 }}>
 					<Col span={3}>
-						<Button type="primary" icon={<PrinterOutlined />} size="small">
+						<Button type="primary" icon={<PrinterOutlined />} size="small" >
 							扫描仪控制
 						</Button>
 					</Col>

@@ -3,6 +3,7 @@ interface ElectronAPI {
 	syncFolder: (folderPath:string) => Promise<string | null>;
 	readFile: (path:string) => Promise<string | null>;
 	downloadFile: (url, fileName) => Promise<string | null>;
+	downloadFileUrlSavePath: (downloadUrl, savePath) => Promise<string | null>;
 }
 
 declare global {
