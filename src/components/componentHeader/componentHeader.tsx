@@ -14,9 +14,7 @@ import {API_URLS} from "../../api/api.ts";
 import FileTypeConverter from "./fileTypeConverter.tsx";
 import { FileItemNew } from "../../types/entityTypesNew.ts";
 import {ComponentHeaderInterface} from "./type.ts";
-
-
-
+import ScannerControl from "../sacnnerControl/scannerControl.tsx";
 
 const ComponentHeader: React.FC<ComponentHeaderInterface> =
 	({
@@ -40,19 +38,20 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 	}) => {
 
 	const [fileTypeConvertModal, setFileTypeConvertModal] = React.useState<boolean>(false);
+	const [scannerControlModal, setScannerControlModal] = React.useState<boolean>(false);
 
 	// 文件选择，构建文件树赋值给internalFileTree
-		const handleFolderSelect = async () => {
-			try {
-				const result: FileItemNew = await (window as any).electronAPI.selectFolder();
-				if (!result) return;
-				setDirHandle(result.path);
-				setInternalFileTree(result.children?result.children:[]);
-				setSelectedPaths([]);
-			} catch (error) {
-				console.error('Error selecting directory:', error);
-			}
-		};
+	const handleFolderSelect = async () => {
+		try {
+			const result: FileItemNew = await (window as any).electronAPI.selectFolder();
+			if (!result) return;
+			setDirHandle(result.path);
+			setInternalFileTree(result.children?result.children:[]);
+			setSelectedPaths([]);
+		} catch (error) {
+			console.error('Error selecting directory:', error);
+		}
+	};
 
 	// 全文识别按钮
 	const onFullTextOcr = async () => {
@@ -92,6 +91,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 	}
 
+
 	return (
 		<div style={{ maxHeight:"12vh",  background: '#f5f7fa',overflow: "auto" }}>
 			<Divider style={{ margin: '1vh 0' }} />
@@ -99,7 +99,9 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 			<div style={{ maxHeight:"6vh",  background: '#f5f7fa',overflow: "auto" }}>
 				<Row  justify="center" align="middle" style={{ flex: 1 }}>
 					<Col span={3}>
-						<Button type="primary" icon={<PrinterOutlined />} size="small">
+						<Button type="primary" icon={<PrinterOutlined />} size="small"
+								onClick={()=>setScannerControlModal(true)}
+						>
 							扫描仪控制
 						</Button>
 					</Col>
@@ -187,6 +189,10 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 			<FileTypeConverter
 				fileTypeConvertModal={fileTypeConvertModal}
 				setFileTypeConvertModal={setFileTypeConvertModal}
+			/>
+			<ScannerControl
+				scannerControlModal={scannerControlModal}
+				setScannerControlModal={setScannerControlModal}
 			/>
 		</div>
 	);

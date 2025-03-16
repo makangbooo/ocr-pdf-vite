@@ -3,6 +3,7 @@ export interface FileItemNew {
 	path: string;
 	isDirectory: boolean;
 	children?: FileItemNew[];
+	type?: 'folder' | 'pdf' | 'image' | 'ofd' | 'other';
 }
 
 export interface CurrentFileNew {

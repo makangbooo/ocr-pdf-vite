@@ -1,5 +1,8 @@
 import React, { useState } from "react";
-import { Col, Form, Input, Modal, Row, Select } from "antd";
+import {Col, Form, Input, message, Modal, Row, Select} from "antd";
+import {FileItemNew} from "../../types/entityTypesNew.ts";
+import { getBase64ByPath_Electron, getFileType} from "../../utils/fileTypeIdentify.tsx";
+import axios from "axios";
 
 interface FileTypeConverter {
 	fileTypeConvertModal: boolean;
@@ -13,30 +16,53 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	const [form] = Form.useForm();
 	const [inputTypeValue, setInputTypeValue] = useState<string|undefined>(undefined); // 存储选中的文件夹路径
 	const [outputTypeValue, setOutputTypeValue] = useState<string|undefined>(undefined); // 存储选中的文件夹路径
+
 	const [inputFolderPath, setInputFolderPath] = useState<string>(""); // 存储选中的文件夹路径
+	const [inputFileCount, setInputFileCount] = useState<number>();
+	const [inputFiles, setInputFiles] = useState<FileItemNew | null>(null);
 
 	const inputType = [
 		{ label: "图片", value: "image" },
-		{ label: "PDF", value: "PDF" },
-		{ label: "OFD", value: "OFD" },
+		// { label: "PDF", value: "pdf" },
+		// { label: "OFD", value: "ofd" },
 	];
 
 	const outputType = [
 		{ label: "图片", value: "image" },
-		{ label: "双层PDF", value: "PDF" },
-		{ label: "双层OFD", value: "OFD" },
+		{ label: "双层PDF", value: "pdf" },
+		{ label: "双层OFD", value: "ofd" },
 	];
 
 	// 处理输入路径选择
 	const onInputPathSelect = async () => {
 		try {
+			if (!inputTypeValue) return
 			// 调用 Electron 的 selectFolder 方法
-			const selectFolder = await (window as any).electronAPI.selectFolder();
+			const selectFolder:FileItemNew = await (window as any).electronAPI.selectFolder();
+			const result = filterFileItemNew(selectFolder, inputTypeValue);
+			const selectFolderOnlyType = result.filteredItem
+			// 更新selectFolderOnlyType的name为path中最后一个/或\后的字符串
+			if (selectFolderOnlyType) {
+				selectFolderOnlyType.name = selectFolderOnlyType.path.split(/[\\/]/).pop() as string;
+			}
+			const count = result.count
+			if (count === 0) {
+				message.error("所选文件夹中没有符合条件的文件");
+				form.setFieldsValue({ InputPath: "" });
+				return
+			}
+
+			console.log("inputTypeValue", inputTypeValue);
 			console.log("selectFolder", selectFolder);
+			console.log("selectFolderOnlyType", selectFolderOnlyType);
+			console.log("count", count);
+
 			const folderPath = selectFolder.path;
-			console.log("folderPath", folderPath);
+			// console.log("folderPath", folderPath);
 			if (folderPath) {
 				setInputFolderPath(folderPath);
+				setInputFileCount(count)
+				setInputFiles(selectFolderOnlyType)
 				form.setFieldsValue({ InputPath: folderPath });
 			} else {
 				console.log("用户取消了选择");
@@ -49,7 +75,8 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	// 处理输出路径选择
 	const onOutputPathSelect = async () => {
 		try {
-			const folderPath = await (window as any).electronAPI.selectFolder();
+			const selectFolder:FileItemNew = await (window as any).electronAPI.selectFolder();
+			const folderPath = selectFolder.path
 			if (folderPath) {
 				form.setFieldsValue({ Outpath: folderPath });
 			}
@@ -58,17 +85,91 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 		}
 	};
 
-	// 提交表单时的处理
+	// todo 提交表单时的处理，加loading
 	const handleOk = () => {
-		form
-			.validateFields()
-			.then((values) => {
-				console.log("表单值:", values);
+		form.validateFields()
+			.then(async (values) => {
+				const outpath: string = values.Outpath // electron下载的根地址
+				// 递归处理文件的函数
+				const processFileItem = async (fileItem: FileItemNew, relativePath: string = '') => {
+					// 如果是目录，递归处理子文件
+					if (fileItem.isDirectory && fileItem.children) {
+						for (const child of fileItem.children) {
+							await processFileItem(child, `${relativePath}${fileItem.name}/`);
+						}
+						return;
+					}
+
+					// 处理单个文件
+					try {
+						const currentFile = await getBase64ByPath_Electron(fileItem)
+
+						console.log("currentFile", currentFile);
+
+						// 构造请求数据
+						const fileData = {
+							name: currentFile?.name,
+							file: currentFile?.data,
+						};
+						// 将fileData存入数组
+						const fileDataArray = []
+						fileDataArray.push(fileData)
+
+						// 发送到后端转换
+						// 4. 发送请求
+						const url = outputTypeValue === "pdf" ? "imageToPDF" : outputTypeValue === "ofd" ?"imageToOFD":"";
+						const response = await axios.post(`${process.env.VITE_API_BASE_URL}/FileTypeConvert/${url}`, fileDataArray);
+
+						// 获取转换后的下载链接
+						const downloadUrl = `${process.env.VITE_API_BASE_URL}/${response.data.name}`
+
+						// 构造保存路径，保留原有文件树结构
+						const savePath = `${outpath}/${relativePath}${fileItem.name}.${outputTypeValue}`;
+						console.log("savePath", savePath);
+						// 使用 Electron 的 ipcRenderer 下载文件
+						await (window as any).electronAPI.downloadFileUrlSavePath(downloadUrl, savePath);
+
+					} catch (error) {
+						console.error(`处理文件 ${fileItem.name} 时出错:`, error);
+					}
+				};
+				if (!inputFiles) return
+				// 开始处理文件树
+				await processFileItem(inputFiles);
 				setFileTypeConvertModal(false);
 			})
 			.catch((error) => {
 				console.error("表单验证失败:", error);
 			});
+	};
+
+	// 递归遍历FileItemNew文件树，只保留FileItemNew中type为inputTypeValue的文件，并统计符合条件的文件数量
+	const filterFileItemNew = (fileItemNew: FileItemNew, inputTypeValue: string): { filteredItem: FileItemNew | null, count: number } => {
+		const fileType = getFileType(fileItemNew.name);
+		fileItemNew.type = fileType;
+		let count = 0;
+
+		if (fileType === inputTypeValue) {
+			count = 1;
+			return { filteredItem: { ...fileItemNew }, count };
+		} else if (fileItemNew.children) {
+			const filteredChildren = fileItemNew.children
+				.map(child => filterFileItemNew(child, inputTypeValue))
+				.filter(child => child.filteredItem !== null);
+
+			count = filteredChildren.reduce((acc, child) => acc + child.count, 0);
+
+			if (filteredChildren.length > 0) {
+				return {
+					filteredItem: {
+						...fileItemNew,
+						children: filteredChildren.map(child => child.filteredItem as FileItemNew),
+					},
+					count,
+				};
+			}
+		}
+		return { filteredItem: null, count };
 	};
 
 	return (
@@ -127,7 +228,8 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 					{inputTypeValue &&
 						<Col span={12}>
 							<Form.Item
-								label="输入路径"
+								label={inputFileCount ? <>输入路径<span style={{color: "blue", fontSize: "small"}}>（已选中{inputFileCount}个{inputTypeValue}文件）</span></> : "输入路径"}
+
 								name="InputPath"
 								hasFeedback
 								rules={[{ required: true, message: "请选择输入路径" }]}
@@ -142,6 +244,8 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 						</Col>
 					}
 					{outputTypeValue &&
+					  <>
+						  {!inputTypeValue && <Col span={12}></Col>}
 						<Col span={12}>
 							<Form.Item
 								label="输出路径"
@@ -156,6 +260,7 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 								/>
 							</Form.Item>
 						</Col>
+                      </>
 					}
 				</Row>
 			</Form>

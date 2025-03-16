@@ -7,4 +7,8 @@ contextBridge.exposeInMainWorld('electronAPI', {
   syncFolder: (folderPath) => ipcRenderer.invoke('sync-folder',folderPath), // 暴露打开文件夹的方法
   readFile: (path) => ipcRenderer.invoke('read-file',path), // 暴露打开文件夹的方法
   downloadFile: (url, fileName) => ipcRenderer.invoke('download-file',url,fileName), // 下载组件
+  downloadFileUrlSavePath: (downloadUrl, savePath) => ipcRenderer.invoke('download-file-url-save',downloadUrl,savePath), // 下载组件
+
+  startScan: () => ipcRenderer.invoke('start-scan'), // 仅作为windows
+
 });
