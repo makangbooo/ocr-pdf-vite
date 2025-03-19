@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {Col, Form, Input, message, Modal, Row, Select} from "antd";
+import {Button, Col, Form, Input, message, Modal, Row, Select, Spin} from "antd";
 import {FileItemNew} from "../../types/entityTypesNew.ts";
 import { getBase64ByPath_Electron, getFileType} from "../../utils/fileTypeIdentify.tsx";
 import axios from "axios";
@@ -20,6 +20,9 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	const [inputFolderPath, setInputFolderPath] = useState<string>(""); // 存储选中的文件夹路径
 	const [inputFileCount, setInputFileCount] = useState<number>();
 	const [inputFiles, setInputFiles] = useState<FileItemNew | null>(null);
+
+	const [modalLoading, setModalLoading] = useState<boolean>(false);
+
 
 	const inputType = [
 		{ label: "图片", value: "image" },
@@ -89,6 +92,7 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	const handleOk = () => {
 		form.validateFields()
 			.then(async (values) => {
+				setModalLoading(true);
 				const outpath: string = values.Outpath // electron下载的根地址
 				// 递归处理文件的函数
 				const processFileItem = async (fileItem: FileItemNew, relativePath: string = '') => {
@@ -137,6 +141,8 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 				// 开始处理文件树
 				await processFileItem(inputFiles);
 				setFileTypeConvertModal(false);
+
+				setModalLoading(false);
 			})
 			.catch((error) => {
 				console.error("表单验证失败:", error);
@@ -184,7 +190,17 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 			width={900}
 			mask={true}
 			maskClosable={false}
+			closable={false}
+			footer={[
+				<Button key="back" type={'primary'} disabled={modalLoading} onClick={() => setFileTypeConvertModal(false)}>
+					取消
+				</Button>,
+				<Button key="back" type={'primary'} disabled={modalLoading} onClick={handleOk}>
+					开始转换
+				</Button>,
+				]}
 		>
+			<Spin spinning={modalLoading} delay={500}>
 			<Form
 				form={form}
 				layout="vertical"
@@ -264,6 +280,7 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 					}
 				</Row>
 			</Form>
+			</Spin>
 		</Modal>
 	);
 };

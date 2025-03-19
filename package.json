@@ -9,18 +9,28 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron": "electron .",
+    "electron": "cross-env NODE_OPTIONS=--no-experimental-fetch electron .",
     "start": "concurrently \"cross-env NODE_ENV=development npm run dev\" \"wait-on http://localhost:5173 && cross-env NODE_ENV=development electron .\"",
     "package": "electron-builder"
   },
   "build": {
     "appId": "com.example.myreactapp",
+    "nodeIntegration": "commonjs",
     "files": [
       "dist/**/*",
-      "main.js"
+      "electron/**/*"
     ],
     "directories": {
       "buildResources": "assets"
+    },
+    "extraResources": [
+      {
+        "from": "node_modules/electron-dl",
+        "to": "app/node_modules/electron-dl"
+      }
+    ],
+    "extraMetadata": {
+      "main": "electron/main.js"
     }
   },
   "dependencies": {
