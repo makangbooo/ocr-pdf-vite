@@ -22,5 +22,18 @@ export default defineConfig(({ mode }) => {
       'process.env.VITE_API_BASE_URL': JSON.stringify(env.VITE_API_BASE_URL),
       'process.env.OCR_API_BASE_URL': JSON.stringify(env.OCR_API_BASE_URL),
     },
+    build: {
+      outDir: 'dist',
+      rollupOptions: {
+        output: {
+          format: 'cjs', // 输出为 CommonJS
+          entryFileNames: '[name].js',
+          chunkFileNames: '[name].js',
+        },
+      },
+      commonjsOptions: {
+        transformMixedEsModules: true,
+      },
+    },
   }
 })

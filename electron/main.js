@@ -1,12 +1,17 @@
-const { app, BrowserWindow, dialog, ipcMain } = require("electron");
+const { app, BrowserWindow, dialog, ipcMain, protocol} = require("electron");
 const path = require("path");
 const fs = require("fs");
+const os = require("os");
 const https = require("https");// 用于下载 HTTPS 文件
 const http = require("http");// 用于下载 HTTPS 文件
 const { download } = require('electron-dl')
 const { spawn } = require('node:child_process')
 
 let mainWindow; // 定义全局主窗口变量
+
+// 强制禁用 ESM 加载器，防止 electron: 协议触发 ESM 解析
+process.env.NODE_ENV === 'production' && (process.env.NODE_OPTIONS = '--no-experimental-fetch');
+require('electron').app.commandLine.appendSwitch('no-esm');
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -23,7 +28,11 @@ function createWindow() {
   if (isDev) {
     mainWindow.loadURL("http://localhost:5173");
   } else {
-    mainWindow.loadFile(path.join(__dirname, "dist/index.html"));
+    // mainWindow.loadFile(path.join(__dirname, "dist/index.html"));
+    const indexPath = path.join(app.getAppPath(), 'dist', 'index.html');
+    mainWindow.loadFile(indexPath).catch((err) => {
+      console.error('Failed to load index.html:', err);
+    });
   }
 
   mainWindow.webContents.openDevTools();
@@ -107,7 +116,7 @@ ipcMain.handle("download-file", async (_, url, defaultFileName) => {
     // 让用户选择下载路径
     const { filePath } = await dialog.showSaveDialog({
       title: "选择下载位置",
-      defaultPath: path.join(require("os").homedir(), "Downloads", defaultFileName),
+      defaultPath: path.join(os.homedir(), "Downloads", defaultFileName),
       buttonLabel: "保存",
       filters: [{ name: "All Files", extensions: ["*"] }],
     });
@@ -143,8 +152,8 @@ ipcMain.handle('download-file-url-save', async (_,  downloadUrl, savePath ) => {
 
   try {
     // 确保目录存在
-    const fs = require('fs').promises
-    await fs.mkdir(path.dirname(savePath), { recursive: true })
+    const fsNew = fs.promises
+    await fsNew.mkdir(path.dirname(savePath), { recursive: true })
 
     // 执行下载
     await download(win, downloadUrl, {
