@@ -35,6 +35,8 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 		 setFullOcrLoading,
 		 templateOcrLoading,
 		 // setTemplateOcrLoading,
+		 setIsCustomOcrEnable,
+		 isCustomOcrEnable,
 	}) => {
 
 	const [fileTypeConvertModal, setFileTypeConvertModal] = React.useState<boolean>(false);
@@ -110,7 +112,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							type="primary"
 							icon={<UploadOutlined />}
 							size="small"
-							disabled={isFullOcrEnabled||isOcrEnabled||isTemplateEnabled}
+							disabled={isFullOcrEnabled||isOcrEnabled||isTemplateEnabled||isCustomOcrEnable}
 							// onClick={() => document.getElementById('folderInput')?.click()}
 							onClick={handleFolderSelect}
 						>
@@ -121,7 +123,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 						<Button
 							type="primary"
 							icon={<ScanOutlined />}
-							disabled={isTemplateEnabled||isOcrEnabled||currentFile?.type!=="image"}
+							disabled={isTemplateEnabled||isOcrEnabled||currentFile?.type!=="image"||isCustomOcrEnable}
 							loading={fullOcrLoading}
 							danger={isFullOcrEnabled}
 							onClick={onFullTextOcr} size="small"
@@ -135,7 +137,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							size="small"
 							icon={<SignatureOutlined />}
 							danger={isOcrEnabled}
-							disabled={!currentFile || !['pdf' , 'image' , 'ofd'].includes(currentFile!.type)}
+							disabled={!currentFile || !['pdf' , 'image' , 'ofd'].includes(currentFile!.type)||isCustomOcrEnable}
 							onClick={() => setIsOcrEnabled(!isOcrEnabled)}>
 							{isOcrEnabled ? "关闭画框识别" : "画框识别"}
 						</Button>
@@ -146,14 +148,23 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							size="small"
 							icon={<GroupOutlined />}
 							loading={templateOcrLoading}
-							disabled={isFullOcrEnabled||isOcrEnabled||currentFile?.type!=="image"}
+							disabled={isFullOcrEnabled||isOcrEnabled||currentFile?.type!=="image"||isCustomOcrEnable}
 							danger={isTemplateEnabled}
 							onClick={() => setIsTemplateEnabled(!isTemplateEnabled)}>
 							{isTemplateEnabled ? "关闭公文识别" : "公文识别"}
 						</Button>
 					</Col>
 					<Col span={3}>
-							<Button type="primary" size="small" icon={<FileAddOutlined />}>公文模版定制</Button>
+							<Button
+								type="primary"
+								size="small"
+								icon={<FileAddOutlined />}
+								danger={isCustomOcrEnable}
+								disabled={isFullOcrEnabled||isOcrEnabled||currentFile?.type!=="image"||isTemplateEnabled}
+								onClick={() => setIsCustomOcrEnable(!isCustomOcrEnable)}
+							>
+								{isCustomOcrEnable ? "关闭模版定制" : "公文模版定制"}
+							</Button>
 					</Col>
 					<Col span={3}>
 						<Button type="primary" size="small" icon={<FolderOpenOutlined />} onClick={()=>setFileTypeConvertModal(true)}>

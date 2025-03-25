@@ -2,7 +2,7 @@ import React, {useState, useRef, useEffect} from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import html2canvas from "html2canvas";
 import axios from "axios";
-import {Flex, Typography, Popover, Image} from "antd";
+import {Flex, Typography, Popover, Image, Select, Form} from "antd";
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
@@ -10,6 +10,7 @@ import {API_URLS} from "../../api/api.ts";
 
 import {CurrentFile, DocumentMeta} from "../../types/entityTypes.ts";
 import { getBase64FromBlobUrl} from "../../utils/fileTypeIdentify.tsx";
+import TextArea from "antd/es/input/TextArea";
 
 interface ImageViewerProps {
 	currentFile?: CurrentFile;
@@ -19,11 +20,15 @@ interface ImageViewerProps {
 	setCurrentFileMeta(meta: DocumentMeta): void;
 	currentFileMeta: DocumentMeta | null;
 	ocrText: string;
-
 	setTemplateOcrLoading: (isTemplateOcrLoading: boolean) => void;
+
+	customOcrLoading: boolean,
+	setCustomOcrLoading: (customOcrLoading: boolean) => void;
+	setIsCustomOcrEnable: (isCustomOcrEnable: boolean) => void;
+	isCustomOcrEnable: boolean,
 }
 
-const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled, setCurrentFileMeta, currentFileMeta, setTemplateOcrLoading }) => {
+const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrText, isOcrEnabled, isTemplateEnabled, setCurrentFileMeta, currentFileMeta, setTemplateOcrLoading,isCustomOcrEnable }) => {
 	const containerRef = useRef<HTMLDivElement>(null);
 
 	// OCR绘制矩形
@@ -31,6 +36,10 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 	const [startPos, setStartPos] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
 	const [rect, setRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 	const [isOCRing, setIsOCRing] = useState(false); // OCR绘制状态
+
+
+	const [isSelecting, setIsSelecting] = useState(false); // OCR绘制状态
+	const [form] = Form.useForm();
 
 	// 模版模式
 	const [template, ] = useState<Array<{ type: string, position: { x: string, y: string, width: string, height: string } }> >(
@@ -54,6 +63,17 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 			setIsOCRDrawing(false);
 		}
 	}, [isOcrEnabled]);
+	useEffect(() => {
+		// 开启模版ocr模式时
+		if (isCustomOcrEnable) {
+			// todo
+		} else {
+			// 关闭 OCR 模式时重置矩形和结果
+			setRect(null);
+			setOcrText("");
+			setIsOCRDrawing(false);
+		}
+	}, [isCustomOcrEnable]);
 
 	// 监听isTemplateEnabled变化，当开启时，将template中的区域，分批发送给API_URLS.IMAGE_BASE64_OCR进行OCR识别
 	useEffect(() => {
@@ -136,7 +156,8 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 
 	// 开始绘制（仅在 OCR 启用时生效）
 	const handleMouseDown = (e: React.MouseEvent) => {
-		if (!isOcrEnabled || !containerRef.current) return;
+		if ((!isOcrEnabled && !isCustomOcrEnable) || !containerRef.current || isSelecting) return;
+		// todo  if (isCustomOcrEnable && isSelecting) return
 		const rectContainer = containerRef.current.getBoundingClientRect();
 		const x = e.clientX - rectContainer.left;
 		const y = e.clientY - rectContainer.top;
@@ -195,6 +216,11 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 			await navigator.clipboard.writeText(response.data.data);
 			setIsOCRing(false);
 
+			if (isCustomOcrEnable){
+				form.setFieldsValue({CustomOcrResult: response.data.data || "未识别到文字"})
+				setIsSelecting(true)
+			}
+
 
 
 			// const formData = new FormData();
@@ -231,6 +257,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 							height: "100%",
 							backgroundColor: "#f0f0f0",
 							overflow: "hidden",
+							// todo
 							userSelect: isOcrEnabled ? "none" : "text",
 						}}
 						onMouseDown={handleMouseDown}
@@ -241,8 +268,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 						<Image key={currentFile.data} src={currentFile.data} style={{height:  "88vh" }} preview={false}/>
 
 						{
-							rect &&
-							// rect && isOcrEnabled && (
+							(rect && isOcrEnabled) && (
 							<Popover content={ocrText || "等待识别..."} title={<span>ocr识别结果{!isOCRing&&<span style={{color: "blue", fontSize: "small"}}>(已复制到剪贴板)</span>}</span>} open={!isOCRDrawing}>
 								<div
 									style={{
@@ -256,7 +282,74 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 									}}
 								/>
 							</Popover>
-						// )
+							)
+						}
+						{
+							(rect && isCustomOcrEnable )&& (
+								<Popover
+									title={"ocr识别结果"}
+									open={!isOCRDrawing}
+									style={{userSelect: "text",}}
+									onOpenChange={()=>{
+										setIsSelecting(!isSelecting)
+										// 初始化表单
+										// form.setFieldsValue({MetaType: "redHeader", CustomOcrResult: "等待识别..."})
+									}}
+									content={
+										<>
+											<Form layout="vertical" form={form}>
+												<Form.Item
+													label="元数据类别"
+													name="MetaType"
+													hasFeedback
+													rules={[{ required: true, message: "请选择输入格式" }]}
+												>
+											<Select
+												defaultValue="redHeader"
+												// onChange={handleChange}
+												options={[
+													{ value: 'redHeader', label: '红头' },
+													{ value: 'fileNumber', label: '文件号' },
+													{ value: 'fileTitle', label: '主题' },
+													{ value: 'documentDate', label: '发文单位'},
+													{ value: 'fileDate', label: '发文日期'},
+													{ value: 'content', label: '正文'},
+												]}
+												onSelect={
+													(value) => {
+													// 更新元数据
+													setCurrentFileMeta({...currentFileMeta, [value]: form.getFieldValue("CustomOcrResult")})
+												}}
+
+											/>
+												</Form.Item>
+												<Form.Item
+													label="识别结果"
+													name="CustomOcrResult"
+													hasFeedback
+													rules={[{ required: true, message: "请选择输入格式" }]}
+												>
+													<TextArea rows={4} defaultValue={"等待识别..."}/>
+												</Form.Item>
+											</Form>
+
+										</>
+									}
+								>
+									<div
+										style={{
+											position: "absolute",
+											left: `${rect.x}px`,
+											top: `${rect.y}px`,
+											width: `${rect.width}px`,
+											height: `${rect.height}px`,
+											border: "2px dashed red",
+											backgroundColor: "rgba(255, 0, 0, 0.1)",
+										}}
+									/>
+								</Popover>
+							)
+
 						}
 						{
 							(isTemplateEnabled && template) && template.map((item,index) => {

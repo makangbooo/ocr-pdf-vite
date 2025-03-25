@@ -26,14 +26,15 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 
 	const inputType = [
 		{ label: "图片", value: "image" },
-		// { label: "PDF", value: "pdf" },
-		// { label: "OFD", value: "ofd" },
+		{ label: "PDF", value: "pdf" },
+		{ label: "OFD", value: "ofd" },
 	];
 
 	const outputType = [
 		{ label: "图片", value: "image" },
 		{ label: "双层PDF", value: "pdf" },
 		{ label: "双层OFD", value: "ofd" },
+		{ label: "文本格式（txt）", value: "txt" },
 	];
 
 	// 处理输入路径选择
@@ -121,7 +122,18 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 
 						// 发送到后端转换
 						// 4. 发送请求
-						const url = outputTypeValue === "pdf" ? "imageToPDF" : outputTypeValue === "ofd" ?"imageToOFD":"";
+						let url;
+						if (inputTypeValue === "image" && outputTypeValue === "pdf") {
+							url = "imageToPDF";
+						} else if (inputTypeValue === "image" && outputTypeValue === "ofd") {
+							url = "imageToOFD";
+						} else if (inputTypeValue === "pdf" && outputTypeValue === "ofd") {
+							url = "pdfToOFD";
+						} else{
+							// 报错
+							message.error("不支持的转换类型");
+							return
+						}
 						const response = await axios.post(`${process.env.VITE_API_BASE_URL}/FileTypeConvert/${url}`, fileDataArray);
 
 						// 获取转换后的下载链接
@@ -231,6 +243,16 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 										if (inputTypeValue === "image" && value === "image") {
 											return Promise.reject(
 												new Error("不支持图片到图片的转换")
+											);
+										}
+										if (inputTypeValue === "pdf" && value === "image") {
+											return Promise.reject(
+												new Error("不支持pdf到图片的转换")
+											);
+										}
+										if (inputTypeValue === "pdf" && value === "pdf") {
+											return Promise.reject(
+												new Error("不支持pdf到pdf的转换")
 											);
 										}
 										return Promise.resolve();

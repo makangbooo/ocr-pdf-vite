@@ -41,7 +41,7 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 				fileNumber: currentFileMeta?.fileNumber,
 				fileTitle: currentFileMeta?.fileTitle,
 				// clumn4: currentFileMeta?.documentDate,
-				// clumn5: currentFileMeta?.content,
+				content: currentFileMeta?.content,
 			});
 		}
 	}, [currentFileMeta]);
@@ -132,12 +132,12 @@ const OperatorViewer: React.FC<OperatorViewerProps> = (
 											</FItem>
 										</Col>
 										<Col span={8}>
-											<FItem label='发文单位' name='clumn4' hasFeedback rules={[{required: true}]}>
+											<FItem label='发文单位' name='fileCompany' hasFeedback rules={[{required: true}]}>
 												<Input />
 											</FItem>
 										</Col>
 										<Col span={8}>
-											<FItem label='发文日期' name='clumn5' hasFeedback rules={[{required: true}]}>
+											<FItem label='发文日期' name='fileDate' hasFeedback rules={[{required: true}]}>
 												<DatePicker style={{ width: '100%' }} />
 											</FItem>
 										</Col>

@@ -29,11 +29,13 @@ const App: React.FC = () => {
     const [isTemplateEnabled, setIsTemplateEnabled] = useState(false);
     const [isFullOcrEnabled, setIsFullOcrEnabled] = useState(false);
     const [isBatchOperation, setIsBatchOperation] = useState(false);// 是否批量操作
+    const [isCustomOcrEnable, setIsCustomOcrEnable] = useState(false);// 是否批量操作
 
     //按钮loading
     const [fullOcrLoading, setFullOcrLoading] = useState(false);
     const [templateOcrLoading, setTemplateOcrLoading] = useState(false);
     const [ocrLoading, setOcrLoading] = useState(false);
+    const [customOcrLoading, setCustomOcrLoading] = useState(false);
 
     // console.log("currentFile", currentFile)
 
@@ -43,12 +45,15 @@ const App: React.FC = () => {
         isFullOcrEnabled: isFullOcrEnabled,
         isTemplateEnabled: isTemplateEnabled,
         isBatchOperation: isBatchOperation,
+        isCustomOcrEnable: isCustomOcrEnable,
 
         // 按钮操作
         setIsOcrEnabled: setIsOcrEnabled,
         setIsFullOcrEnabled: setIsFullOcrEnabled,
         setIsTemplateEnabled: setIsTemplateEnabled,
         setIsBatchOperation: setIsBatchOperation,
+        setIsCustomOcrEnable: setIsCustomOcrEnable,
+
 
         // 按钮loading
         fullOcrLoading: fullOcrLoading,
@@ -57,6 +62,8 @@ const App: React.FC = () => {
         setTemplateOcrLoading: setTemplateOcrLoading,
         ocrLoading: ocrLoading,
         setOcrLoading: setOcrLoading,
+        customOcrLoading: customOcrLoading,
+        setCustomOcrLoading: setCustomOcrLoading
     }
 
     return (

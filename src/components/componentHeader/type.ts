@@ -30,4 +30,11 @@ export interface ComponentHeaderInterface {
 	templateOcrLoading: boolean;
 	fullOcrLoading:boolean;
 	setFullOcrLoading: (isFullOcrLoading: boolean) => void;
+
+	customOcrLoading: boolean,
+	setCustomOcrLoading: (customOcrLoading: boolean) => void;
+	setIsCustomOcrEnable: (isCustomOcrEnable: boolean) => void;
+	isCustomOcrEnable: boolean,
+
+
 }
