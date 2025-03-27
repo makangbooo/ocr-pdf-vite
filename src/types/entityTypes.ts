@@ -31,4 +31,7 @@ export interface DocumentMeta {
 	content?: string;
 	// 发文日期
 	documentDate?: Date | null;
+	// 发文单位
+    fileCompany?: string;
+
 }
