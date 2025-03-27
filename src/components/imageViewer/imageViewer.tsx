@@ -2,7 +2,7 @@ import React, {useState, useRef, useEffect} from "react";
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import html2canvas from "html2canvas";
 import axios from "axios";
-import {Flex, Typography, Popover, Image, Select, Form} from "antd";
+import {Flex, Typography, Image, Form} from "antd";
 
 import '@react-pdf-viewer/core/lib/styles/index.css';
 import '@react-pdf-viewer/default-layout/lib/styles/index.css';
@@ -10,9 +10,10 @@ import {API_URLS} from "../../api/api.ts";
 
 import {CurrentFile, DocumentMeta} from "../../types/entityTypes.ts";
 import { getBase64FromBlobUrl} from "../../utils/fileTypeIdentify.tsx";
-import TextArea from "antd/es/input/TextArea";
+import DrawOCR from "../DrawOcrRender/drawOCR.tsx";
 
 interface ImageViewerProps {
+
 	currentFile?: CurrentFile;
 	isOcrEnabled: boolean;
 	isTemplateEnabled: boolean;
@@ -37,7 +38,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 	const [rect, setRect] = useState<{ x: number; y: number; width: number; height: number } | null>(null);
 	const [isOCRing, setIsOCRing] = useState(false); // OCR绘制状态
 
-
 	const [isSelecting, setIsSelecting] = useState(false); // OCR绘制状态
 	const [form] = Form.useForm();
 
@@ -47,7 +47,7 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 			{ type:"redHeader", position: { x: "15%", y: "20%", width: "70%", height: "6%"} },	// 红头
 			{ type:"fileNumber", position: { x: "28%", y: "31%", width: "42%", height: "3%"} },  // 文件号
 			{ type:"fileTitle", position: { x: "20%", y: "35%", width: "59%", height: "9%"} },  // 主题
-			{ type:"content", position: { x: "12%", y: "47%", width: "75%", height: "44%"} }	  // 正文
+			{ type:"content", position: { x: "12%", y: "47%", width: "75%", height: "44%"} }  // 正文
 		]
 	);
 
@@ -257,7 +257,6 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 							height: "100%",
 							backgroundColor: "#f0f0f0",
 							overflow: "hidden",
-							// todo
 							userSelect: isOcrEnabled ? "none" : "text",
 						}}
 						onMouseDown={handleMouseDown}
@@ -267,126 +266,20 @@ const ImageViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrT
 
 						<Image key={currentFile.data} src={currentFile.data} style={{height:  "88vh" }} preview={false}/>
 
-						{
-							(rect && isOcrEnabled) && (
-							<Popover content={ocrText || "等待识别..."} title={<span>ocr识别结果{!isOCRing&&<span style={{color: "blue", fontSize: "small"}}>(已复制到剪贴板)</span>}</span>} open={!isOCRDrawing}>
-								<div
-									style={{
-										position: "absolute",
-										left: `${rect.x}px`,
-										top: `${rect.y}px`,
-										width: `${rect.width}px`,
-										height: `${rect.height}px`,
-										border: "2px dashed red",
-										backgroundColor: "rgba(255, 0, 0, 0.1)",
-									}}
-								/>
-							</Popover>
-							)
-						}
-						{
-							(rect && isCustomOcrEnable )&& (
-								<Popover
-									title={"ocr识别结果"}
-									open={!isOCRDrawing}
-									style={{userSelect: "text",}}
-									onOpenChange={()=>{
-										setIsSelecting(!isSelecting)
-										// 初始化表单
-										// form.setFieldsValue({MetaType: "redHeader", CustomOcrResult: "等待识别..."})
-									}}
-									content={
-										<>
-											<Form layout="vertical" form={form}>
-												<Form.Item
-													label="元数据类别"
-													name="MetaType"
-													hasFeedback
-													rules={[{ required: true, message: "请选择输入格式" }]}
-												>
-											<Select
-												defaultValue="redHeader"
-												// onChange={handleChange}
-												options={[
-													{ value: 'redHeader', label: '红头' },
-													{ value: 'fileNumber', label: '文件号' },
-													{ value: 'fileTitle', label: '主题' },
-													{ value: 'documentDate', label: '发文单位'},
-													{ value: 'fileDate', label: '发文日期'},
-													{ value: 'content', label: '正文'},
-												]}
-												onSelect={
-													(value) => {
-													// 更新元数据
-													setCurrentFileMeta({...currentFileMeta, [value]: form.getFieldValue("CustomOcrResult")})
-												}}
+						<DrawOCR
+							rect={rect}
+							isOCRDrawing={isOCRDrawing}
+							isOCRing={isOCRing}
+							isOcrEnabled={isOcrEnabled}
+							ocrText={ocrText}
+							setIsSelecting={setIsSelecting}
+							currentFileMeta={currentFileMeta}
+							setCurrentFileMeta={setCurrentFileMeta}
+							isTemplateEnabled={isTemplateEnabled}
+							template={template}
+							isCustomOcrEnable={isCustomOcrEnable} isSelecting={isSelecting}
+						/>
 
-											/>
-												</Form.Item>
-												<Form.Item
-													label="识别结果"
-													name="CustomOcrResult"
-													hasFeedback
-													rules={[{ required: true, message: "请选择输入格式" }]}
-												>
-													<TextArea rows={4} defaultValue={"等待识别..."}/>
-												</Form.Item>
-											</Form>
-
-										</>
-									}
-								>
-									<div
-										style={{
-											position: "absolute",
-											left: `${rect.x}px`,
-											top: `${rect.y}px`,
-											width: `${rect.width}px`,
-											height: `${rect.height}px`,
-											border: "2px dashed red",
-											backgroundColor: "rgba(255, 0, 0, 0.1)",
-										}}
-									/>
-								</Popover>
-							)
-
-						}
-						{
-							(isTemplateEnabled && template) && template.map((item,index) => {
-								return (
-									// todo 添加Popover
-									<Popover content={
-										() => {
-											const type = item.type
-											if (currentFileMeta) {
-												if (type === "redHeader") {
-													return currentFileMeta.redHeader
-												} else if (type === "fileNumber") {
-													return currentFileMeta.fileNumber
-												} else if (type === "fileTitle") {
-													return currentFileMeta.fileTitle
-												} else if (type === "content") {
-													return currentFileMeta.content
-												}
-											} else return ""
-										}
-									} title={<span>ocr识别结果</span>}>
-									<div
-										key={index}
-										style={{
-											position: "absolute",
-											left: item.position.x,
-											top: item.position.y,
-											width: item.position.width,
-											height: item.position.height,
-											border: "2px dashed red",
-											backgroundColor: "rgba(255, 0, 0, 0.1)",
-										}}
-									/>
-									</Popover>
-								)
-							})
-						}
 					</div>
 				</div>
 
