@@ -22,14 +22,8 @@ const OfdViewer: React.FC<{ currentFile: CurrentFileNew;} > = ({currentFile}) =>
 
 			const uploadFile = async () => {
 				try {
-					const response = await axios.post(
-						`${process.env.VITE_API_BASE_URL}/FileTypeConvert/ofd2pdf`,
-						formData,
-						{ responseType: 'blob' } // 告诉 axios 接收文件流
-					);
-
-					// 创建 URL 并设置给 Viewer
-					const fileUrl = URL.createObjectURL(new Blob([response.data], { type: 'application/pdf' }));
+					const response = await axios.post(`${process.env.VITE_API_BASE_URL}/FileTypeConvert/ofd2pdf`, formData);
+					const fileUrl = response.data.file;
 					setFileUrl(fileUrl);
 				} catch (error) {
 					console.error('上传文件出错:', error);
@@ -39,8 +33,6 @@ const OfdViewer: React.FC<{ currentFile: CurrentFileNew;} > = ({currentFile}) =>
 			uploadFile();
 		}
 	}, [currentFile]);
-
-
 
 	const defaultLayoutPluginInstance = defaultLayoutPlugin();
 	return (
@@ -52,7 +44,6 @@ const OfdViewer: React.FC<{ currentFile: CurrentFileNew;} > = ({currentFile}) =>
 					height: "100%",
 					overflow: "hidden" }}
 			>
-
 				<div
 					style={{
 						position: "relative",
@@ -63,16 +54,14 @@ const OfdViewer: React.FC<{ currentFile: CurrentFileNew;} > = ({currentFile}) =>
 						// userSelect: isOcrEnabled ? "none" : "text",
 					}}
 				>
-
-					{fileUrl!=="" &&<Worker workerUrl="/pdfjs/pdf.worker.js">
-						{/*<Worker workerUrl="https://unpkg.com/pdfjs-dist@2.15.349/build/pdf.worker.js">*/}
-						{/*<Viewer fileUrl={"http://localhost:8081/df0ff600-66ee-4336-8c7b-db52c89d4edf_ofdTest.pdf"}*/}
-						<Viewer fileUrl={fileUrl}
-							// onDocumentLoad={onLoadSuccess}
-								plugins={[
-									defaultLayoutPluginInstance,
-								]}/>
-					</Worker>}
+					{fileUrl!=="" &&
+					  <Worker workerUrl="/pdfjs/pdf.worker.js">
+						<Viewer
+						  fileUrl={`data:application/pdf;base64,${fileUrl}`}
+						  plugins={[defaultLayoutPluginInstance,]}
+						/>
+					  </Worker>
+					}
 				</div>
 			</div>
 		</>

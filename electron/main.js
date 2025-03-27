@@ -166,7 +166,7 @@ ipcMain.handle('download-file-url-save', async (_,  downloadUrl, savePath ) => {
   }
 })
 
-// 仅作为windows打开exe文件
+// todo 仅作为windows打开exe文件，linux环境需要定制
 // 处理扫描请求
 ipcMain.handle('start-scan', async () => {
   try {
