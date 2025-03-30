@@ -14,7 +14,7 @@ const OfdViewer: React.FC<{ currentFile: CurrentFileNew;} > = ({currentFile}) =>
 
 	const [fileUrl, setFileUrl] = React.useState("");
 
-	// 在组件挂载时将currentFile发送给后端{`${process.env.VITE_API_BASE_URL}/OCRToPDF/uploadImage`}
+	// 在组件挂载时将currentFile发送给后端，将ofd文件转换成pdf文件预览
 	useEffect(() => {
 		if (currentFile && currentFile.file) {
 			const formData = new FormData();

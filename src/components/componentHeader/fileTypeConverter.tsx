@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import {Button, Col, Form, Input, message, Modal, Row, Select, Spin} from "antd";
+import {Button, Col, Form, Input, message, Modal, Progress, Row, Select, Spin} from "antd";
 import {FileItemNew} from "../../types/entityTypesNew.ts";
 import { getBase64ByPath_Electron, getFileType} from "../../utils/fileTypeIdentify.tsx";
 import axios from "axios";
@@ -22,6 +22,7 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 	const [inputFiles, setInputFiles] = useState<FileItemNew | null>(null);
 
 	const [modalLoading, setModalLoading] = useState<boolean>(false);
+	const [progress, setProgress] = useState<number>(0); // 进度状态
 
 
 	const inputType = [
@@ -95,6 +96,8 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 			.then(async (values) => {
 				setModalLoading(true);
 				const outpath: string = values.Outpath // electron下载的根地址
+				let processedCount = 0; // 已处理文件计数
+
 				// 递归处理文件的函数
 				const processFileItem = async (fileItem: FileItemNew, relativePath: string = '') => {
 					// 如果是目录，递归处理子文件
@@ -129,6 +132,10 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 							url = "imageToOFD";
 						} else if (inputTypeValue === "pdf" && outputTypeValue === "ofd") {
 							url = "pdfToOFD";
+						} else if (inputTypeValue === "pdf" && outputTypeValue === "pdf") {
+							url = "pdf2pdf";
+						} else if (inputTypeValue === "ofd" && outputTypeValue === "ofd") {
+							url = "ofd2ofd";
 						} else{
 							// 报错
 							message.error("不支持的转换类型");
@@ -145,6 +152,9 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 						// 使用 Electron 的 ipcRenderer 下载文件
 						await (window as any).electronAPI.downloadFileUrlSavePath(downloadUrl, savePath);
 
+						// 更新进度
+						processedCount++;
+						setProgress(Math.round((processedCount / (inputFileCount || 1)) * 100));
 					} catch (error) {
 						console.error(`处理文件 ${fileItem.name} 时出错:`, error);
 					}
@@ -301,6 +311,7 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
                       </>
 					}
 				</Row>
+				{modalLoading && <Progress percent={progress} />}
 			</Form>
 			</Spin>
 		</Modal>
