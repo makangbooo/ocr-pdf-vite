@@ -164,6 +164,14 @@ const FileTypeConverter: React.FC<FileTypeConverter> = ({
 				await processFileItem(inputFiles);
 				setFileTypeConvertModal(false);
 
+				// 处理完成后，重置表单和状态
+				form.resetFields();
+				setInputFolderPath("");
+				setInputFileCount(0);
+				setInputFiles(null);
+				setInputTypeValue(undefined);
+				setOutputTypeValue(undefined);
+				setProgress(0);
 				setModalLoading(false);
 			})
 			.catch((error) => {
