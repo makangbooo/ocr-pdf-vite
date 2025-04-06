@@ -296,6 +296,8 @@ const FileViewer: React.FC<ImageViewerProps> = ({ currentFile, ocrText, setOcrTe
 								setRectArr={setRectArr}
 								setIsOCRDrawing={setIsOCRDrawing}
 								setEnableDrawing={setEnableDrawing}
+								setCurrentFileMeta={setCurrentFileMeta}
+								currentFileMeta={currentFileMeta}
 							/>
 						))}
 						{rect && (
@@ -374,7 +376,9 @@ const RectPopover: React.FC<{
 	setRectArr: React.Dispatch<React.SetStateAction<RectItem[]>>;
 	setIsOCRDrawing: (isOCRDrawing: boolean) => void;
 	setEnableDrawing: (enableDrawing: boolean) => void;
-}> = ({ rectItem, index, setRectArr, setEnableDrawing }) => {
+	setCurrentFileMeta(meta: DocumentMeta): void;
+	currentFileMeta: DocumentMeta | null;
+}> = ({ rectItem, index, setRectArr, setEnableDrawing,setCurrentFileMeta,currentFileMeta  }) => {
 	const [form] = Form.useForm();
 
 	const handleMetaTypeChange = (value: string) => {
@@ -391,6 +395,18 @@ const RectPopover: React.FC<{
 		);
 		setEnableDrawing(true); // 关闭后允许继续绘制
 	};
+	const syncCurrentFileMeta = () => {
+		const text = form.getFieldValue("CustomOcrResult");
+		const MetaType = form.getFieldValue("MetaType");
+
+		setCurrentFileMeta({
+			...currentFileMeta,
+			[MetaType]: text
+		});
+	};
+
+
+
 
 	return (
 		<Popover
@@ -421,6 +437,9 @@ const RectPopover: React.FC<{
 					</Form.Item>
 					<Button onClick={handleClosePopover} style={{ marginTop: "10px" }}>
 						关闭
+					</Button>
+					<Button onClick={syncCurrentFileMeta} style={{ marginTop: "10px" }}>
+						确定
 					</Button>
 				</Form>
 			}
