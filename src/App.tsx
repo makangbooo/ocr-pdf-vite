@@ -1,11 +1,9 @@
 import React, { useState } from 'react';
 import FileSystemViewer from './components/fileSystem/FileSystemViewer.tsx';
 import ComponentHeader from './components/componentHeader/componentHeader.tsx';
-import ImageViewer from './components/imageViewer/imageViewer.tsx';
+import FileViewer from './components/fileViewer/fileViewer.tsx';
 import OperatorViewer from "./components/operatorViewer/operatorViewer.tsx";
-import PdfViewer from "./components/pdfViewer/pdfViewer.tsx";
 import { DocumentMeta } from "./types/entityTypes.ts";
-import OfdViewer from "./components/ofdViewer/ofdViewer.tsx";
 import {Flex, Typography} from "antd";
 import '@ant-design/v5-patch-for-react-19';
 import {CurrentFileNew, FileItemNew} from "./types/entityTypesNew.ts";
@@ -84,6 +82,7 @@ const App: React.FC = () => {
                     setInternalFileTree={setInternalFileTree}
                     resetIsBatchOperation={setIsBatchOperation}
                     currentFile={currentFile}
+                    setCurrentFile={setCurrentFile}
                     setFullText={setFullText}
                     {...buttonsStatusEdit}
                 />
@@ -156,33 +155,21 @@ const App: React.FC = () => {
                     />
                     {/*todo 冗长可优化*/}
                     {
-                        currentFile?.type === 'pdf' ?
-                            <PdfViewer
+                        currentFile && ["image","pdf","ofd"].includes(currentFile?.type) ?
+                            <FileViewer
+                                key={currentFile?.path}
                                 currentFile={currentFile}
                                 setOcrText={setOcrText}
                                 ocrText={ocrText}
+                                setCurrentFileMeta={setCurrentFileMeta}
+                                currentFileMeta={currentFileMeta}
                                 {...buttonsStatusEdit}
                             />
-                            :
-                            currentFile?.type === 'ofd' ?
-                                <OfdViewer currentFile={currentFile} {...buttonsStatusEdit}/>
                                 :
-                                currentFile?.type === 'image' ?
-                                    <ImageViewer
-                                        key={currentFile?.path}
-                                        currentFile={currentFile}
-                                        setOcrText={setOcrText}
-                                        ocrText={ocrText}
-                                        setCurrentFileMeta={setCurrentFileMeta}
-                                        currentFileMeta={currentFileMeta}
-                                        {...buttonsStatusEdit}
-                                    />
-                                    :
-                                    <Flex justify="center" align="center" style={{ height: '100%', width: "100%" }}>
-                                        <Typography.Title type="secondary" level={5}>暂不支持该文件类型</Typography.Title>
-                                    </Flex>
+                            <Flex justify="center" align="center" style={{ height: '100%', width: "100%" }}>
+                                <Typography.Title type="secondary" level={5}>暂不支持该文件类型</Typography.Title>
+                            </Flex>
                     }
-
                 </div>
 
                 {/* 页面3 */}
