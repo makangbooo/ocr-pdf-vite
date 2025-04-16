@@ -156,7 +156,6 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							icon={<UploadOutlined />}
 							size="small"
 							disabled={isFullOcrEnabled||isOcrEnabled||isTemplateEnabled||isCustomOcrEnable}
-							// onClick={() => document.getElementById('folderInput')?.click()}
 							onClick={handleFolderSelect}
 						>
 							导入文件
@@ -168,7 +167,6 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 							icon={<UploadOutlined />}
 							size="small"
 							disabled={isTemplateEnabled||isOcrEnabled||currentFile?.type!=="image"||isCustomOcrEnable}
-
 							onClick={() => {
 								setCurrentHeaderButton("ImageOperation");
 							}}
@@ -245,7 +243,7 @@ const ComponentHeader: React.FC<ComponentHeaderInterface> =
 
 			{/* 第二部分：次要功能 */}
 			<div style={{ maxHeight:"4vh",  background: '#f5f7fa',overflow: "auto" }}>
-				<SubHeader currentFile={currentFile} currentHeaderButton={currentHeaderButton} setCurrentFile={setCurrentFile}/>
+				<SubHeader key={currentFile?.name} currentFile={currentFile} currentHeaderButton={currentHeaderButton} setCurrentFile={setCurrentFile}/>
 			</div>
 
 			<FileTypeConverter

@@ -15,6 +15,7 @@ const SubHeader: React.FC<SubHeaderFileType> = ({ currentFile, currentHeaderButt
 	const [RowList, setRowList] = useState<JSX.Element | null>(null);
 	const curretnFileOri = currentFile;
 
+
 	// 转化为双层pdf
 	const prossImage = async (requestType : string): Promise<void> => {
 		// 1. 输入验证
@@ -49,15 +50,13 @@ const SubHeader: React.FC<SubHeaderFileType> = ({ currentFile, currentHeaderButt
 		}
 	};
 
-
-
 	useEffect(() => {
 		let newRowList: JSX.Element | null = null;
 
 		switch (currentHeaderButton) {
 			case "ImageOperation":
 				newRowList = (
-					<Row justify="center" align="middle" gutter={[8, 8]}>
+					<Row justify="center" align="middle" >
 						<Col span={2}>
 							<Button
 								block
@@ -125,7 +124,7 @@ const SubHeader: React.FC<SubHeaderFileType> = ({ currentFile, currentHeaderButt
 								style={{ background: '#fff', boxShadow: '0 1px 4px rgba(0, 0, 0, 0.1)' }}
 								onClick={()=>prossImage("Binary")}
 							>
-								二值化
+								锐化
 							</Button>
 						</Col>
 					</Row>

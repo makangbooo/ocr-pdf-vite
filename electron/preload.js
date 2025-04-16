@@ -9,6 +9,20 @@ contextBridge.exposeInMainWorld('electronAPI', {
   downloadFile: (url, fileName) => ipcRenderer.invoke('download-file',url,fileName), // 下载组件
   downloadFileUrlSavePath: (downloadUrl, savePath) => ipcRenderer.invoke('download-file-url-save',downloadUrl,savePath), // 下载组件
 
-  startScan: () => ipcRenderer.invoke('start-scan'), // 仅作为windows
+  // startScan: () => ipcRenderer.invoke('start-scan'), // 仅作为windows
+
+  checkSane: () => ipcRenderer.invoke('scan:check-sane'),
+  installSane: () => ipcRenderer.invoke('scan:install-sane'),
+  checkScanner: () => ipcRenderer.invoke('scan:check-scanner'),
+  launchXsane: (device) => ipcRenderer.invoke('scan:launch-xsane', device),
+
+  // 接收实时进度更新
+  onInstallProgress: (callback) => {
+    ipcRenderer.on('scan:install-progress', (event, data) => callback(data))
+  }
 
 });
+
+
+
+

@@ -5,8 +5,10 @@ const os = require("os");
 const https = require("https");// 用于下载 HTTPS 文件
 const http = require("http");// 用于下载 HTTPS 文件
 const { download } = require('electron-dl')
-const { spawn } = require('node:child_process')
+const { exec, spawn } = require('node:child_process')
+const { promisify } = require('util');
 
+const execAsync = promisify(exec);
 let mainWindow; // 定义全局主窗口变量
 
 // 强制禁用 ESM 加载器，防止 electron: 协议触发 ESM 解析
@@ -148,15 +150,13 @@ ipcMain.handle("download-file", async (_, url, defaultFileName) => {
 
 // 提供下载链接和本地保存路径，直接下载文件
 ipcMain.handle('download-file-url-save', async (_,  downloadUrl, savePath ) => {
-  const win = BrowserWindow.getFocusedWindow()
-
   try {
     // 确保目录存在
     const fsNew = fs.promises
     await fsNew.mkdir(path.dirname(savePath), { recursive: true })
 
     // 执行下载
-    await download(win, downloadUrl, {
+    await download(mainWindow, downloadUrl, {
       saveAs: false,
       directory: path.dirname(savePath),
       filename: path.basename(savePath)
@@ -165,24 +165,63 @@ ipcMain.handle('download-file-url-save', async (_,  downloadUrl, savePath ) => {
     console.error('文件下载失败:', error)
   }
 })
+// ----------------------------------------linux扫描仪----------------------------------------
 
-// todo 仅作为windows打开exe文件，linux环境需要定制
-// 处理扫描请求
-ipcMain.handle('start-scan', async () => {
+// 处理扫描仪相关 IPC 通信
+ipcMain.handle('scan:check-sane', async () => {
   try {
-    const naps2Path = path.join(__dirname, 'NAPS2', 'NAPS2.exe');
-    const scanProcess = spawn(naps2Path, [], {
-      detached: true,
-      stdio: 'ignore',
-    });
-    scanProcess.unref();
-    console.log(`NAPS2扫描程序已启动，路径: ${naps2Path}`);
-    return { success: true };
-  } catch (error) {
-    console.error('启动扫描程序时出错:', error);
-    return { success: false, error: error.message };
+    const { stdout } = await execAsync('which sane-find-scanner')
+    return { installed: !!stdout }
+  } catch (e) {
+    return { installed: false }
   }
-});
+})
+
+ipcMain.handle('scan:install-sane', (event) => {
+  return new Promise((resolve, reject) => {
+    const installCmd = `pkexec sh -c '
+      apt-get update && 
+      apt-get install -y sane sane-utils xsane && 
+      usermod -a -G scanner $SUDO_USER
+    '`
+
+    const install = spawn('sh', ['-c', installCmd])
+    let output = ''
+
+    // 实时推送进度
+    const sendProgress = (data) => {
+      mainWindow.webContents.send('scan:install-progress', data.toString())
+    }
+
+    install.stdout.on('data', sendProgress)
+    install.stderr.on('data', sendProgress)
+
+    install.on('close', (code) => {
+      code === 0 ? resolve() : reject(new Error(`安装失败: ${output}`))
+    })
+
+    install.on('error', reject)
+  })
+})
+
+ipcMain.handle('scan:check-scanner', async () => {
+  try {
+    const { stdout } = await execAsync('scanimage -L')
+    const devices = stdout
+      .split('\n')
+      .filter(line => line.includes('device'))
+      .map(line => line.match(/device `(.+?)'/)[1])
+
+    return { found: devices.length > 0, devices }
+  } catch (e) {
+    return { found: false, error: e.message }
+  }
+})
+
+ipcMain.handle('scan:launch-xsane', (_, device) => {
+  return execAsync(device ? `xsane ${device}` : 'xsane')
+})
+
 
 
 app.whenReady().then(() => {
